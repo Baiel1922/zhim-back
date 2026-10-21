@@ -1,0 +1,40 @@
+openapi: 3.1.0
+info:
+  title: zhim.kg API
+  version: 0.1.0
+  description: |
+    Single source of truth for the zhim.kg API.
+    Go server stubs and TypeScript clients are generated from this file (`make gen`).
+servers:
+  - url: http://localhost:8090
+    description: Local development
+  - url: https://api.zhim.kg
+    description: Production
+
+tags:
+  - name: system
+    description: Service health and diagnostics
+
+paths:
+  /healthz:
+    get:
+      operationId: getHealthz
+      summary: Liveness probe
+      tags: [system]
+      responses:
+        "200":
+          description: Service is alive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+
+components:
+  schemas:
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok]

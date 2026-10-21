@@ -1,0 +1,139 @@
+# Local development stack. Run via `make dev` from the zhim-back root.
+# Relative paths resolve against this file's directory (deploy/).
+# FRONT_DIR points at a checkout of zhim-front; the Makefile sets it to an absolute path.
+
+name: zhim
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  # Official MinIO images were pulled from Docker Hub and Quay; Chainguard publishes a maintained build.
+  minio:
+    image: cgr.dev/chainguard/minio:latest
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY}
+      MC_HOST_local: http://${S3_ACCESS_KEY}:${S3_SECRET_KEY}@localhost:9000
+    ports:
+      - "127.0.0.1:${MINIO_PORT:-9000}:9000"
+      - "127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+
+  # One-shot: creates the bucket, then exits.
+  minio-init:
+    image: cgr.dev/chainguard/minio:latest
+    entrypoint: ["mc"]
+    command: ["mb", "--ignore-existing", "local/${S3_BUCKET}"]
+    environment:
+      MC_HOST_local: http://${S3_ACCESS_KEY}:${S3_SECRET_KEY}@minio:9000
+    depends_on:
+      minio:
+        condition: service_healthy
+    restart: "no"
+
+  imgproxy:
+    image: darthsim/imgproxy:v4
+    environment:
+      IMGPROXY_KEY: ${IMGPROXY_KEY}
+      IMGPROXY_SALT: ${IMGPROXY_SALT}
+      IMGPROXY_USE_S3: "true"
+      IMGPROXY_S3_ENDPOINT: http://minio:9000
+      IMGPROXY_S3_ENDPOINT_USE_PATH_STYLE: "true"
+      IMGPROXY_S3_REGION: ${S3_REGION}
+      IMGPROXY_ALLOWED_SOURCES: s3://
+      IMGPROXY_S3_ALLOWED_BUCKETS: ${S3_BUCKET}
+      IMGPROXY_AUTO_WEBP: "true"
+      IMGPROXY_AUTO_AVIF: "true"
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY}
+    ports:
+      - "${IMGPROXY_PORT:-8081}:8080"
+    healthcheck:
+      test: ["CMD", "imgproxy", "health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile.dev
+    env_file: ../.env
+    environment:
+      # Container-network overrides of host-oriented values in .env.
+      HTTP_ADDR: ":8080"
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      S3_ENDPOINT: http://minio:9000
+    ports:
+      - "${API_PORT:-8090}:8080"
+    volumes:
+      - ../backend:/app/backend
+      - gomod:/go/pkg/mod
+      - gocache:/root/.cache/go-build
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+
+  web:
+    build:
+      context: ${FRONT_DIR:-../../zhim-front}/web
+      dockerfile: Dockerfile.dev
+    environment:
+      API_INTERNAL_URL: http://backend:8080
+      NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL}
+      NEXT_PUBLIC_SITE_URL: ${WEB_URL}
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    volumes:
+      - ${FRONT_DIR:-../../zhim-front}/web:/app
+      # Keep the Linux node_modules and build cache from the image, not the host.
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - backend
+
+  admin:
+    build:
+      context: ${FRONT_DIR:-../../zhim-front}/admin
+      dockerfile: Dockerfile.dev
+    environment:
+      VITE_API_URL: ${PUBLIC_API_URL}
+    ports:
+      - "${ADMIN_PORT:-5173}:5173"
+    volumes:
+      - ${FRONT_DIR:-../../zhim-front}/admin:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  miniodata:
+  gomod:
+  gocache:
