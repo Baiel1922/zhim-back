@@ -8,7 +8,12 @@ import (
 
 func setRequired(t *testing.T) {
 	t.Setenv("DATABASE_URL", "postgres://x")
+	t.Setenv("S3_ENDPOINT", "http://minio:9000")
 	t.Setenv("S3_BUCKET", "zhim")
+	t.Setenv("S3_ACCESS_KEY", "zhim")
+	t.Setenv("S3_SECRET_KEY", "secret")
+	t.Setenv("JWT_SECRET", "0123456789abcdef0123456789abcdef")
+	t.Setenv("TELEGRAM_BOT_TOKEN", "1:x")
 	t.Setenv("IMGPROXY_URL", "http://img")
 	t.Setenv("IMGPROXY_KEY", "aa")
 	t.Setenv("IMGPROXY_SALT", "bb")

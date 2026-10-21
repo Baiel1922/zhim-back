@@ -28,13 +28,14 @@ const (
 
 // Checkout validates promo codes and places orders.
 type Checkout struct {
-	store *repo.Store
-	now   func() time.Time
+	store  *repo.Store
+	notify Revalidator
+	now    func() time.Time
 }
 
-// NewCheckout creates a Checkout.
-func NewCheckout(store *repo.Store) *Checkout {
-	return &Checkout{store: store, now: time.Now}
+// NewCheckout creates a Checkout. notify (may be nil) learns about stock changes.
+func NewCheckout(store *repo.Store, notify Revalidator) *Checkout {
+	return &Checkout{store: store, notify: notifierOrNoop(notify), now: time.Now}
 }
 
 // PromoResult is a promo code that applies to a subtotal.
@@ -141,7 +142,13 @@ func (c *Checkout) CreateOrder(ctx context.Context, in OrderInput) (*OrderDetail
 	if err != nil {
 		return nil, err
 	}
-	return c.details(ctx, order)
+	d, err := loadOrderDetails(ctx, c.store, order)
+	if err != nil {
+		return nil, err
+	}
+	// Stock changed: refresh availability on the storefront.
+	c.notify.Notify(productTags(d.ProductSlugs)...)
+	return d, nil
 }
 
 func (c *Checkout) placeOrder(ctx context.Context, q *db.Queries, in OrderInput, items []ItemInput) (db.Order, error) {
@@ -292,7 +299,7 @@ func (c *Checkout) replay(ctx context.Context, key, phone string) (*OrderDetails
 	if order.Phone != phone {
 		return nil, newError(CodeIdempotencyConflict, "idempotency key was used for another order")
 	}
-	return c.details(ctx, order)
+	return loadOrderDetails(ctx, c.store, order)
 }
 
 // GetOrder returns an order for the thank-you page. A wrong phone looks like a missing order.
@@ -310,13 +317,14 @@ func (c *Checkout) GetOrder(ctx context.Context, number, phone string) (*OrderDe
 		}
 		return nil, fmt.Errorf("get order: %w", err)
 	}
-	return c.details(ctx, order)
+	return loadOrderDetails(ctx, c.store, order)
 }
 
-func (c *Checkout) details(ctx context.Context, order db.Order) (*OrderDetails, error) {
+// loadOrderDetails gathers items, zone, promo code and pickup point of an order.
+func loadOrderDetails(ctx context.Context, store *repo.Store, order db.Order) (*OrderDetails, error) {
 	d := &OrderDetails{Order: order, ProductSlugs: map[int64]string{}}
 	var err error
-	if d.Items, err = c.store.ListOrderItems(ctx, order.ID); err != nil {
+	if d.Items, err = store.ListOrderItems(ctx, order.ID); err != nil {
 		return nil, fmt.Errorf("list order items: %w", err)
 	}
 
@@ -327,7 +335,7 @@ func (c *Checkout) details(ctx context.Context, order db.Order) (*OrderDetails, 
 		}
 	}
 	if len(productIDs) > 0 {
-		slugs, err := c.store.ListProductSlugs(ctx, productIDs)
+		slugs, err := store.ListProductSlugs(ctx, productIDs)
 		if err != nil {
 			return nil, fmt.Errorf("list product slugs: %w", err)
 		}
@@ -337,21 +345,21 @@ func (c *Checkout) details(ctx context.Context, order db.Order) (*OrderDetails, 
 	}
 
 	if order.DeliveryZoneID != nil {
-		zone, err := c.store.GetDeliveryZone(ctx, *order.DeliveryZoneID)
+		zone, err := store.GetDeliveryZone(ctx, *order.DeliveryZoneID)
 		if err != nil {
 			return nil, fmt.Errorf("get delivery zone: %w", err)
 		}
 		d.DeliveryZone = &zone
 	}
 	if order.DeliveryMethod == db.DeliveryMethodPickup {
-		pickup, err := readPickup(ctx, c.store.Queries)
+		pickup, err := readPickup(ctx, store.Queries)
 		if err != nil {
 			return nil, err
 		}
 		d.Pickup = &pickup
 	}
 	if order.PromoCodeID != nil {
-		promo, err := c.store.GetPromoCodeByID(ctx, *order.PromoCodeID)
+		promo, err := store.GetPromoCodeByID(ctx, *order.PromoCodeID)
 		if err != nil && !repo.IsNotFound(err) {
 			return nil, fmt.Errorf("get promo code: %w", err)
 		}

@@ -2,14 +2,18 @@ package http_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
+	"github.com/Baiel1922/zhim-back/backend/internal/auth"
 	apihttp "github.com/Baiel1922/zhim-back/backend/internal/http"
 	"github.com/Baiel1922/zhim-back/backend/internal/http/oapi"
 	"github.com/Baiel1922/zhim-back/backend/internal/imgproxy"
@@ -27,9 +31,32 @@ func TestMain(m *testing.M) {
 const imgBase = "https://img.test"
 
 type api struct {
-	t     *testing.T
-	srv   *httptest.Server
-	store *repo.Store
+	t       *testing.T
+	srv     *httptest.Server
+	store   *repo.Store
+	objects *memObjects
+}
+
+const botToken = "123456:http-test-token"
+
+// memObjects is an in-memory object store.
+type memObjects struct {
+	mu   sync.Mutex
+	keys map[string]int
+}
+
+func (m *memObjects) Put(_ context.Context, key, _ string, data []byte) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.keys[key] = len(data)
+	return nil
+}
+
+func (m *memObjects) Delete(_ context.Context, key string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	delete(m.keys, key)
+	return nil
 }
 
 // newAPI serves the full router over a seeded database.
@@ -43,15 +70,23 @@ func newAPI(t *testing.T, checkoutLimit int) *api {
 	if err != nil {
 		t.Fatal(err)
 	}
+	tokens, err := auth.NewTokens(strings.Repeat("t", 32), time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+	objects := &memObjects{keys: map[string]int{}}
 	srv := httptest.NewServer(apihttp.NewRouter(apihttp.Deps{
-		Log:               slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Log:               log,
 		Catalog:           service.NewCatalog(store),
-		Checkout:          service.NewCheckout(store),
+		Checkout:          service.NewCheckout(store, nil),
+		Admin:             service.NewAdmin(store, objects, nil, time.UTC, log),
+		AdminAuth:         service.NewAdminAuth(store, tokens, botToken),
 		Images:            images,
 		CheckoutRateLimit: checkoutLimit,
 	}))
 	t.Cleanup(srv.Close)
-	return &api{t: t, srv: srv, store: store}
+	return &api{t: t, srv: srv, store: store, objects: objects}
 }
 
 // reply is what tests need from a response; the body is decoded and closed in call.

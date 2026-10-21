@@ -9,12 +9,17 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
+	_ "time/tzdata" // the distroless/alpine images have no zoneinfo
 
+	"github.com/Baiel1922/zhim-back/backend/internal/auth"
 	"github.com/Baiel1922/zhim-back/backend/internal/config"
 	apihttp "github.com/Baiel1922/zhim-back/backend/internal/http"
 	"github.com/Baiel1922/zhim-back/backend/internal/imgproxy"
 	"github.com/Baiel1922/zhim-back/backend/internal/repo"
+	"github.com/Baiel1922/zhim-back/backend/internal/revalidate"
 	"github.com/Baiel1922/zhim-back/backend/internal/service"
+	"github.com/Baiel1922/zhim-back/backend/internal/storage"
 )
 
 func main() {
@@ -47,11 +52,31 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	objects, err := storage.NewS3(cfg.S3.Endpoint, cfg.S3.Region, cfg.S3.AccessKey, cfg.S3.SecretKey, cfg.S3.Bucket)
+	if err != nil {
+		return err
+	}
+	loc, err := time.LoadLocation(cfg.Timezone)
+	if err != nil {
+		return err
+	}
+	tokens, err := auth.NewTokens(cfg.JWT.Secret, cfg.JWT.TTL)
+	if err != nil {
+		return err
+	}
+
+	notifier := revalidate.New(cfg.WebInternalURL, cfg.RevalidateSecret, log)
+	if cfg.WebInternalURL == "" {
+		log.Warn("WEB_INTERNAL_URL is empty: storefront revalidation is disabled")
+	}
+	go notifier.Run(ctx)
 
 	router := apihttp.NewRouter(apihttp.Deps{
 		Log:               log,
 		Catalog:           service.NewCatalog(store),
-		Checkout:          service.NewCheckout(store),
+		Checkout:          service.NewCheckout(store, notifier),
+		Admin:             service.NewAdmin(store, objects, notifier, loc, log),
+		AdminAuth:         service.NewAdminAuth(store, tokens, cfg.TelegramBotToken),
 		Images:            images,
 		CORSOrigins:       cfg.CORSAllowedOrigins,
 		TrustedProxyCIDRs: cfg.HTTP.TrustedProxyCIDRs,

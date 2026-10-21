@@ -19,10 +19,12 @@ const maxBodyBytes = 64 << 10
 
 // Deps are the router's dependencies.
 type Deps struct {
-	Log      *slog.Logger
-	Catalog  *service.Catalog
-	Checkout *service.Checkout
-	Images   *imgproxy.Signer
+	Log       *slog.Logger
+	Catalog   *service.Catalog
+	Checkout  *service.Checkout
+	Admin     *service.Admin
+	AdminAuth *service.AdminAuth
+	Images    *imgproxy.Signer
 	// Browser origins allowed by CORS.
 	CORSOrigins []string
 	// Reverse proxy CIDRs whose X-Forwarded-For is trusted; empty = use the TCP peer.
@@ -44,7 +46,7 @@ func NewRouter(d Deps) http.Handler {
 	r.Use(requestLogger(d.Log))
 	r.Use(middleware.Recoverer)
 	r.Use(cors(d.CORSOrigins))
-	r.Use(middleware.RequestSize(maxBodyBytes))
+	r.Use(bodyLimit)
 
 	r.NotFound(func(w http.ResponseWriter, _ *http.Request) {
 		writeError(w, oapi.Error{Code: oapi.ErrorCodeNotFound, Message: "route not found"})
@@ -56,14 +58,16 @@ func NewRouter(d Deps) http.Handler {
 	// Keyed by the Go operation name that the generated strict handler passes to middleware.
 	checkoutLimiter := newRateLimiter(d.CheckoutRateLimit, time.Minute)
 	limiters := map[string]*rateLimiter{
-		"CreateOrder":   checkoutLimiter,
-		"ValidatePromo": checkoutLimiter,
-		"GetOrder":      newRateLimiter(d.LookupRateLimit, time.Minute),
+		"CreateOrder":       checkoutLimiter,
+		"ValidatePromo":     checkoutLimiter,
+		"AdminAuthTelegram": checkoutLimiter,
+		"GetOrder":          newRateLimiter(d.LookupRateLimit, time.Minute),
 	}
 
 	strict := oapi.NewStrictHandlerWithOptions(
-		NewHandlers(d.Catalog, d.Checkout, d.Images),
-		[]oapi.StrictMiddlewareFunc{rateLimit(limiters)},
+		NewHandlers(d),
+		// Applied in reverse order: the rate limit runs before authentication.
+		[]oapi.StrictMiddlewareFunc{requireAdmin(d.AdminAuth), rateLimit(limiters)},
 		oapi.StrictHTTPServerOptions{
 			RequestErrorHandlerFunc:  requestErrorHandler,
 			ResponseErrorHandlerFunc: responseErrorHandler(d.Log),

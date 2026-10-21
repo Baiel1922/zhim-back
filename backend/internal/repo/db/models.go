@@ -472,33 +472,34 @@ type DeliveryZone struct {
 }
 
 type Order struct {
-	ID             int64
-	Number         string
-	Status         OrderStatus
-	PaymentStatus  PaymentStatus
-	PaymentMethod  PaymentMethod
-	CustomerName   string
-	Phone          string
-	Comment        string
-	DeliveryMethod DeliveryMethod
-	DeliveryZoneID *int64
-	Address        *string
-	Subtotal       int32
-	DeliveryPrice  int32
-	Discount       int32
-	Total          int32
-	PromoCodeID    *int64
-	Lang           AppLang
-	UtmSource      *string
-	UtmMedium      *string
-	UtmCampaign    *string
-	UtmContent     *string
-	Fbp            *string
-	Fbc            *string
-	Ttclid         *string
-	IdempotencyKey string
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	ID              int64
+	Number          string
+	Status          OrderStatus
+	PaymentStatus   PaymentStatus
+	PaymentMethod   PaymentMethod
+	CustomerName    string
+	Phone           string
+	Comment         string
+	DeliveryMethod  DeliveryMethod
+	DeliveryZoneID  *int64
+	Address         *string
+	Subtotal        int32
+	DeliveryPrice   int32
+	Discount        int32
+	Total           int32
+	PromoCodeID     *int64
+	Lang            AppLang
+	UtmSource       *string
+	UtmMedium       *string
+	UtmCampaign     *string
+	UtmContent      *string
+	Fbp             *string
+	Fbc             *string
+	Ttclid          *string
+	IdempotencyKey  string
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+	InternalComment string
 }
 
 type OrderItem struct {

@@ -12,3 +12,5 @@ output-options:
   name-normalizer: ToCamelCaseWithInitialisms
   # Optional arrays/maps are plain slices/maps (nil = absent) instead of *[]T.
   prefer-skip-optional-pointer-on-container-types: true
+  # Keep schemas referenced only from `webhooks` (pruning drops them but keeps their aliases).
+  skip-prune: true

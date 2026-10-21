@@ -11,16 +11,21 @@ import (
 
 // Handlers implements the generated strict server interface.
 type Handlers struct {
-	catalog  *service.Catalog
-	checkout *service.Checkout
-	images   *imgproxy.Signer
+	catalog   *service.Catalog
+	checkout  *service.Checkout
+	admin     *service.Admin
+	adminAuth *service.AdminAuth
+	images    *imgproxy.Signer
 }
 
 var _ oapi.StrictServerInterface = (*Handlers)(nil)
 
+// thumbPreset is used for admin list previews.
+var thumbPreset = imgproxy.Thumb
+
 // NewHandlers constructs the API handlers.
-func NewHandlers(catalog *service.Catalog, checkout *service.Checkout, images *imgproxy.Signer) *Handlers {
-	return &Handlers{catalog: catalog, checkout: checkout, images: images}
+func NewHandlers(d Deps) *Handlers {
+	return &Handlers{catalog: d.Catalog, checkout: d.Checkout, admin: d.Admin, adminAuth: d.AdminAuth, images: d.Images}
 }
 
 // presenter validates the ?lang parameter (absent = ru).

@@ -6,31 +6,65 @@ package db
 
 import (
 	"context"
+	"time"
 )
 
 type Querier interface {
+	AdminCountOrdersByStatus(ctx context.Context, arg AdminCountOrdersByStatusParams) ([]AdminCountOrdersByStatusRow, error)
+	AdminListCategories(ctx context.Context) ([]AdminListCategoriesRow, error)
+	AdminListDeliveryZones(ctx context.Context) ([]DeliveryZone, error)
+	// Filters shared by AdminListOrders and AdminCountOrdersByStatus:
+	// search matches the number; search_digits (3+ digits of the query) matches the phone.
+	AdminListOrders(ctx context.Context, arg AdminListOrdersParams) ([]AdminListOrdersRow, error)
+	// All products (active or not) with stock totals and the first photo.
+	AdminListProducts(ctx context.Context, arg AdminListProductsParams) ([]AdminListProductsRow, error)
+	AdminListPromoCodes(ctx context.Context) ([]PromoCode, error)
+	CreateAdmin(ctx context.Context, arg CreateAdminParams) (Admin, error)
+	CreateCategory(ctx context.Context, arg CreateCategoryParams) (Category, error)
+	CreateColor(ctx context.Context, arg CreateColorParams) (Color, error)
+	CreateDeliveryZone(ctx context.Context, arg CreateDeliveryZoneParams) (DeliveryZone, error)
 	CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error)
 	CreateOrderItem(ctx context.Context, arg CreateOrderItemParams) (OrderItem, error)
 	CreateOrderStatusHistory(ctx context.Context, arg CreateOrderStatusHistoryParams) (OrderStatusHistory, error)
+	CreateProduct(ctx context.Context, arg CreateProductParams) (Product, error)
 	CreateProductImage(ctx context.Context, arg CreateProductImageParams) (ProductImage, error)
 	CreatePromoCode(ctx context.Context, arg CreatePromoCodeParams) (PromoCode, error)
+	CreateSizeChart(ctx context.Context, arg CreateSizeChartParams) (SizeChart, error)
+	// Matrix creation: an existing product+color+size combination is skipped.
+	CreateVariantIfMissing(ctx context.Context, arg CreateVariantIfMissingParams) (int64, error)
+	DecrementPromoCodeUsage(ctx context.Context, id int64) error
 	// Affects 0 rows when there is not enough stock.
 	DecrementVariantStock(ctx context.Context, arg DecrementVariantStockParams) (int64, error)
+	DeleteAdmin(ctx context.Context, id int64) (int64, error)
+	DeleteCategory(ctx context.Context, id int64) (int64, error)
+	DeleteColor(ctx context.Context, id int64) (int64, error)
+	DeleteDeliveryZone(ctx context.Context, id int64) (int64, error)
+	DeleteProduct(ctx context.Context, id int64) (int64, error)
+	DeleteProductImage(ctx context.Context, id int64) (int64, error)
+	DeletePromoCode(ctx context.Context, id int64) (int64, error)
+	DeleteSizeChart(ctx context.Context, id int64) (int64, error)
+	DeleteVariant(ctx context.Context, id int64) (int64, error)
 	GetActiveAdminByTelegramID(ctx context.Context, telegramID int64) (Admin, error)
 	GetActiveProductBySlug(ctx context.Context, slug string) (GetActiveProductBySlugRow, error)
+	GetAdmin(ctx context.Context, id int64) (Admin, error)
+	GetCategory(ctx context.Context, id int64) (Category, error)
 	GetCategoryBySlug(ctx context.Context, slug string) (Category, error)
+	GetColor(ctx context.Context, id int64) (Color, error)
 	GetDeliveryZone(ctx context.Context, id int64) (DeliveryZone, error)
+	GetOrder(ctx context.Context, id int64) (Order, error)
 	GetOrderByIdempotencyKey(ctx context.Context, idempotencyKey string) (Order, error)
 	GetOrderByNumber(ctx context.Context, number string) (Order, error)
 	// Public order status page: the phone acts as a second factor for the guessable number.
 	GetOrderByNumberAndPhone(ctx context.Context, arg GetOrderByNumberAndPhoneParams) (Order, error)
 	GetProductByID(ctx context.Context, id int64) (Product, error)
 	GetProductBySlug(ctx context.Context, slug string) (Product, error)
+	GetProductImage(ctx context.Context, id int64) (ProductImage, error)
 	// Case-insensitive (citext).
 	GetPromoCodeByCode(ctx context.Context, code string) (PromoCode, error)
 	GetPromoCodeByID(ctx context.Context, id int64) (PromoCode, error)
 	GetSetting(ctx context.Context, key string) (Setting, error)
 	GetSizeChart(ctx context.Context, id int64) (SizeChart, error)
+	GetVariant(ctx context.Context, id int64) (GetVariantRow, error)
 	// Affects 0 rows when the code has reached max_uses.
 	IncrementPromoCodeUsage(ctx context.Context, id int64) (int64, error)
 	IncrementVariantStock(ctx context.Context, arg IncrementVariantStockParams) error
@@ -39,20 +73,44 @@ type Querier interface {
 	// Storefront catalog. Sizes and colors include only active variants in stock;
 	// preview_s3_keys holds the first two images (main + hover).
 	ListActiveProducts(ctx context.Context, arg ListActiveProductsParams) ([]ListActiveProductsRow, error)
+	ListAdmins(ctx context.Context) ([]Admin, error)
 	ListCategories(ctx context.Context) ([]Category, error)
 	ListColors(ctx context.Context) ([]Color, error)
+	ListLowStockVariants(ctx context.Context, threshold int32) ([]ListLowStockVariantsRow, error)
+	ListOrderHistoryWithAdmins(ctx context.Context, orderID int64) ([]ListOrderHistoryWithAdminsRow, error)
 	ListOrderItems(ctx context.Context, orderID int64) ([]OrderItem, error)
 	ListOrderStatusHistory(ctx context.Context, orderID int64) ([]OrderStatusHistory, error)
 	ListProductImages(ctx context.Context, productID int64) ([]ProductImage, error)
 	ListProductSlugs(ctx context.Context, ids []int64) ([]ListProductSlugsRow, error)
 	ListSettings(ctx context.Context, keys []string) ([]Setting, error)
+	ListSizeCharts(ctx context.Context) ([]SizeChart, error)
 	// Size order first, so distinct sizes come out ranked when scanning rows.
 	ListVariantsByProduct(ctx context.Context, productID int64) ([]ListVariantsByProductRow, error)
+	// Serializes changes that could leave the store without an active owner.
+	LockActiveOwners(ctx context.Context) ([]int64, error)
+	LockOrder(ctx context.Context, id int64) (Order, error)
 	// Row-locks the variants of an order being created. Locks are taken in id order
 	// so concurrent checkouts with overlapping items cannot deadlock.
 	LockVariantsForOrder(ctx context.Context, ids []int64) ([]LockVariantsForOrderRow, error)
+	NextProductImageSort(ctx context.Context, productID int64) (int32, error)
+	// Cancelled orders do not count.
+	OrderStatsSince(ctx context.Context, createdAt time.Time) (OrderStatsSinceRow, error)
+	SetProductImageSort(ctx context.Context, arg SetProductImageSortParams) (int64, error)
+	SetVariantStock(ctx context.Context, arg SetVariantStockParams) (ProductVariant, error)
+	TopProductsSince(ctx context.Context, arg TopProductsSinceParams) ([]TopProductsSinceRow, error)
+	UpdateAdmin(ctx context.Context, arg UpdateAdminParams) (Admin, error)
+	UpdateCategory(ctx context.Context, arg UpdateCategoryParams) (Category, error)
+	UpdateColor(ctx context.Context, arg UpdateColorParams) (Color, error)
+	UpdateDeliveryZone(ctx context.Context, arg UpdateDeliveryZoneParams) (DeliveryZone, error)
+	UpdateOrderInternalComment(ctx context.Context, arg UpdateOrderInternalCommentParams) (Order, error)
+	UpdateOrderPaymentStatus(ctx context.Context, arg UpdateOrderPaymentStatusParams) (Order, error)
 	// Compare-and-set: returns no rows if the status changed concurrently.
 	UpdateOrderStatus(ctx context.Context, arg UpdateOrderStatusParams) (Order, error)
+	UpdateProduct(ctx context.Context, arg UpdateProductParams) (Product, error)
+	UpdateProductImage(ctx context.Context, arg UpdateProductImageParams) (ProductImage, error)
+	UpdatePromoCode(ctx context.Context, arg UpdatePromoCodeParams) (PromoCode, error)
+	UpdateSizeChart(ctx context.Context, arg UpdateSizeChartParams) (SizeChart, error)
+	UpdateVariant(ctx context.Context, arg UpdateVariantParams) (ProductVariant, error)
 	UpsertAdmin(ctx context.Context, arg UpsertAdminParams) (Admin, error)
 	UpsertCategory(ctx context.Context, arg UpsertCategoryParams) (Category, error)
 	UpsertColor(ctx context.Context, arg UpsertColorParams) (Color, error)

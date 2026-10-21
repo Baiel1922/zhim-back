@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: zhim.kg API
-  version: 0.2.0
+  version: 0.3.0
   description: |
     Single source of truth for the zhim.kg API.
     Go server stubs and TypeScript clients are generated from this file (`make gen`).
@@ -22,6 +22,14 @@ tags:
     description: Storefront catalog and settings
   - name: checkout
     description: Promo codes and orders
+  - name: admin-auth
+    description: Admin sign-in (Telegram Mini App) and admin accounts
+  - name: admin-catalog
+    description: Catalog management
+  - name: admin-store
+    description: Delivery zones, promo codes and settings
+  - name: admin-orders
+    description: Order processing and dashboard
 
 paths:
   /healthz:
@@ -224,8 +232,1313 @@ paths:
         "429":
           $ref: "#/components/responses/TooManyRequests"
 
+
+  /v1/admin/auth/telegram:
+    post:
+      operationId: adminAuthTelegram
+      summary: "Exchange Telegram Mini App initData for an access token"
+      description: "initData is validated with the bot token (HMAC-SHA256) and must be at most 24 hours old; the Telegram user must be an active admin. The token lives 12 hours."
+      tags: [admin-auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminAuthRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSession"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /v1/admin/me:
+    get:
+      operationId: adminGetMe
+      summary: "Current admin"
+      description: "Roles: owner, manager."
+      tags: [admin-auth]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Admin"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v1/admin/categories:
+    get:
+      operationId: adminListCategories
+      summary: "List categories"
+      description: "Roles: owner."
+      tags: [admin-catalog]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminCategoryList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      operationId: adminCreateCategory
+      summary: "Create a category"
+      description: "Roles: owner."
+      tags: [admin-catalog]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminCategoryInput"
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminCategory"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/admin/categories/{id}:
+    put:
+      operationId: adminUpdateCategory
+      summary: "Update a category"
+      description: "Roles: owner."
+      tags: [admin-catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminCategoryInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminCategory"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      operationId: adminDeleteCategory
+      summary: "Delete a category"
+      description: "Fails with in_use while products reference the category. Roles: owner."
+      tags: [admin-catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "204":
+          description: Done
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/admin/colors:
+    get:
+      operationId: adminListColors
+      summary: "List colors"
+      description: "Roles: owner."
+      tags: [admin-catalog]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminColorList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      operationId: adminCreateColor
+      summary: "Create a color"
+      description: "Roles: owner."
+      tags: [admin-catalog]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminColorInput"
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminColor"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/admin/colors/{id}:
+    put:
+      operationId: adminUpdateColor
+      summary: "Update a color"
+      description: "Roles: owner."
+      tags: [admin-catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminColorInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminColor"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      operationId: adminDeleteColor
+      summary: "Delete a color"
+      description: "Fails with in_use while variants reference the color. Roles: owner."
+      tags: [admin-catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "204":
+          description: Done
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/admin/size-charts:
+    get:
+      operationId: adminListSizeCharts
+      summary: "List sizecharts"
+      description: "Roles: owner."
+      tags: [admin-catalog]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSizeChartList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      operationId: adminCreateSizeChart
+      summary: "Create a sizechart"
+      description: "Roles: owner."
+      tags: [admin-catalog]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminSizeChartInput"
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSizeChart"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/admin/size-charts/{id}:
+    put:
+      operationId: adminUpdateSizeChart
+      summary: "Update a sizechart"
+      description: "Roles: owner."
+      tags: [admin-catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminSizeChartInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSizeChart"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      operationId: adminDeleteSizeChart
+      summary: "Delete a sizechart"
+      description: "Products that used the chart are left without one. Roles: owner."
+      tags: [admin-catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "204":
+          description: Done
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/admin/products:
+    get:
+      operationId: adminListProducts
+      summary: "List products (active and hidden)"
+      description: "Roles: owner, manager."
+      tags: [admin-catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: category_id
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: q
+          in: query
+          description: Search by title or slug
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminProductList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      operationId: adminCreateProduct
+      summary: "Create a product"
+      description: "Roles: owner."
+      tags: [admin-catalog]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminProductInput"
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminProduct"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/admin/products/{id}:
+    get:
+      operationId: adminGetProduct
+      summary: "Product with variants and images"
+      description: "Roles: owner, manager."
+      tags: [admin-catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminProduct"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      operationId: adminUpdateProduct
+      summary: "Update a product"
+      description: "Roles: owner."
+      tags: [admin-catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminProductInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminProduct"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      operationId: adminDeleteProduct
+      summary: "Delete a product with its variants and photos"
+      description: "Past orders keep their snapshots. Prefer hiding (is_active=false). Roles: owner."
+      tags: [admin-catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "204":
+          description: Done
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/admin/products/{id}/variants:
+    post:
+      operationId: adminCreateVariants
+      summary: "Create the size × color matrix"
+      description: "Existing combinations are kept as is; SKUs are generated. Roles: owner."
+      tags: [admin-catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VariantMatrixInput"
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminProduct"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/admin/variants/{id}:
+    put:
+      operationId: adminUpdateVariant
+      summary: "Update a variant's SKU and visibility"
+      description: "Roles: owner."
+      tags: [admin-catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminVariantInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminVariant"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      operationId: adminDeleteVariant
+      summary: "Delete a variant"
+      description: "Roles: owner."
+      tags: [admin-catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "204":
+          description: Done
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/admin/variants/{id}/stock:
+    put:
+      operationId: adminSetVariantStock
+      summary: "Set a variant's stock"
+      description: "Roles: owner, manager."
+      tags: [admin-catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StockInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminVariant"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/admin/products/{id}/images:
+    post:
+      operationId: adminUploadImage
+      summary: "Upload a product photo"
+      description: "JPEG, PNG or WebP up to 15 MB. The original is stored in S3; imgproxy resizes on the fly. Roles: owner."
+      tags: [admin-catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/ImageUploadForm"
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminImage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+
+  /v1/admin/products/{id}/images/order:
+    put:
+      operationId: adminReorderImages
+      summary: "Reorder product photos"
+      description: "image_ids must list every photo of the product exactly once. Roles: owner."
+      tags: [admin-catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImageOrderInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminProduct"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/admin/images/{id}:
+    put:
+      operationId: adminUpdateImage
+      summary: "Bind a photo to a color and set alt texts"
+      description: "Roles: owner."
+      tags: [admin-catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImageInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminImage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: adminDeleteImage
+      summary: "Delete a photo"
+      description: "Roles: owner."
+      tags: [admin-catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "204":
+          description: Done
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/admin/delivery-zones:
+    get:
+      operationId: adminListDeliveryZones
+      summary: "List deliveryzones"
+      description: "Roles: owner."
+      tags: [admin-store]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDeliveryZoneList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      operationId: adminCreateDeliveryZone
+      summary: "Create a deliveryzone"
+      description: "Roles: owner."
+      tags: [admin-store]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminDeliveryZoneInput"
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDeliveryZone"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/admin/delivery-zones/{id}:
+    put:
+      operationId: adminUpdateDeliveryZone
+      summary: "Update a deliveryzone"
+      description: "Roles: owner."
+      tags: [admin-store]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminDeliveryZoneInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDeliveryZone"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      operationId: adminDeleteDeliveryZone
+      summary: "Delete a deliveryzone"
+      description: "Fails with in_use once orders reference the zone; deactivate it instead. Roles: owner."
+      tags: [admin-store]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "204":
+          description: Done
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/admin/promo-codes:
+    get:
+      operationId: adminListPromoCodes
+      summary: "List promocodes"
+      description: "Roles: owner."
+      tags: [admin-store]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminPromoCodeList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      operationId: adminCreatePromoCode
+      summary: "Create a promocode"
+      description: "Roles: owner."
+      tags: [admin-store]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminPromoCodeInput"
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminPromoCode"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/admin/promo-codes/{id}:
+    put:
+      operationId: adminUpdatePromoCode
+      summary: "Update a promocode"
+      description: "Roles: owner."
+      tags: [admin-store]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminPromoCodeInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminPromoCode"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      operationId: adminDeletePromoCode
+      summary: "Delete a promocode"
+      description: "Roles: owner."
+      tags: [admin-store]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "204":
+          description: Done
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/admin/settings:
+    get:
+      operationId: adminGetSettings
+      summary: "Store settings"
+      description: "Roles: owner."
+      tags: [admin-store]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSettings"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    put:
+      operationId: adminUpdateSettings
+      summary: "Replace store settings"
+      description: "Roles: owner."
+      tags: [admin-store]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminSettings"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSettings"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /v1/admin/admins:
+    get:
+      operationId: adminListAdmins
+      summary: "List admins"
+      description: "Roles: owner."
+      tags: [admin-auth]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      operationId: adminCreateAdmin
+      summary: "Add an admin by Telegram id"
+      description: "Roles: owner."
+      tags: [admin-auth]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminCreateInput"
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Admin"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/admin/admins/{id}:
+    put:
+      operationId: adminUpdateAdmin
+      summary: "Update an admin"
+      description: "The last active owner cannot be demoted or deactivated. Roles: owner."
+      tags: [admin-auth]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUpdateInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Admin"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      operationId: adminDeleteAdmin
+      summary: "Remove an admin"
+      description: "The last active owner cannot be removed. Roles: owner."
+      tags: [admin-auth]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "204":
+          description: Done
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/admin/orders:
+    get:
+      operationId: adminListOrders
+      summary: "Orders, newest first, with per-status counts"
+      description: "Roles: owner, manager."
+      tags: [admin-orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/OrderStatus"
+        - name: from
+          in: query
+          description: First day (Asia/Bishkek), inclusive
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          description: Last day (Asia/Bishkek), inclusive
+          schema:
+            type: string
+            format: date
+        - name: q
+          in: query
+          description: Order number or phone fragment
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOrderList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /v1/admin/orders/{id}:
+    get:
+      operationId: adminGetOrder
+      summary: "Order details with history"
+      description: "Roles: owner, manager."
+      tags: [admin-orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOrder"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/admin/orders/{id}/status:
+    put:
+      operationId: adminSetOrderStatus
+      summary: "Move an order to another status"
+      description: "Only transitions listed in allowed_statuses are accepted. Cancelling returns stock. Roles: owner, manager."
+      tags: [admin-orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderStatusInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOrder"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/admin/orders/{id}/payment:
+    put:
+      operationId: adminSetOrderPayment
+      summary: "Mark an order paid or unpaid"
+      description: "Roles: owner, manager."
+      tags: [admin-orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderPaymentInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOrder"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/admin/orders/{id}/comment:
+    put:
+      operationId: adminSetOrderComment
+      summary: "Set the internal comment"
+      description: "Roles: owner, manager."
+      tags: [admin-orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderCommentInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOrder"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/admin/dashboard:
+    get:
+      operationId: adminGetDashboard
+      summary: "Sales metrics, top products and low stock"
+      description: "Roles: owner."
+      tags: [admin-orders]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+webhooks:
+  revalidate:
+    post:
+      operationId: revalidateStorefront
+      summary: Sent by the API to the storefront after catalog or settings changes
+      description: |
+        POST {WEB_INTERNAL_URL}/api/revalidate with `Authorization: Bearer <REVALIDATE_SECRET>`.
+        The storefront calls revalidateTag for each tag. Retried with backoff on failure.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevalidateRequest"
+      responses:
+        "200":
+          description: Revalidated
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token from POST /v1/admin/auth/telegram
+
   parameters:
+    ID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
     Lang:
       name: lang
       in: query
@@ -234,6 +1547,30 @@ components:
         $ref: "#/components/schemas/Lang"
 
   responses:
+    Unauthorized:
+      description: Missing, invalid or expired token; invalid Telegram initData
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Not an active admin, or the role does not allow this
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    PayloadTooLarge:
+      description: Upload exceeds 15 MB
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    UnsupportedMediaType:
+      description: Upload is not a JPEG, PNG or WebP image
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
     BadRequest:
       description: Malformed request or invalid fields (code validation_error)
       content:
@@ -247,7 +1584,7 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
     Conflict:
-      description: Out of stock (see items) or Idempotency-Key reused for another order
+      description: Out of stock (see items), Idempotency-Key reused, duplicate value, resource in use or invalid status transition
       content:
         application/json:
           schema:
@@ -308,6 +1645,17 @@ components:
         - promo_min_total
         - idempotency_conflict
         - rate_limited
+        - unauthorized
+        - forbidden
+        - init_data_invalid
+        - init_data_expired
+        - not_admin
+        - already_exists
+        - in_use
+        - invalid_status_transition
+        - last_owner
+        - file_too_large
+        - unsupported_media_type
         - internal_error
 
     Error:
@@ -342,7 +1690,7 @@ components:
           type: string
         code:
           type: string
-          enum: [required, invalid, too_long, too_many]
+          enum: [required, invalid, too_long, too_many, taken]
 
     StockIssue:
       type: object
@@ -862,3 +2210,978 @@ components:
         created_at:
           type: string
           format: date-time
+
+    AdminRole:
+      type: string
+      enum: [owner, manager]
+
+    Admin:
+      type: object
+      required: [id, telegram_id, name, role, is_active]
+      properties:
+        id:
+          type: integer
+          format: int64
+        telegram_id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        role:
+          $ref: "#/components/schemas/AdminRole"
+        is_active:
+          type: boolean
+
+    AdminList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Admin"
+
+    AdminCreateInput:
+      type: object
+      required: [telegram_id, name, role, is_active]
+      properties:
+        telegram_id:
+          type: integer
+          format: int64
+        name:
+          type: string
+          maxLength: 100
+        role:
+          $ref: "#/components/schemas/AdminRole"
+        is_active:
+          type: boolean
+
+    AdminUpdateInput:
+      type: object
+      required: [name, role, is_active]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        role:
+          $ref: "#/components/schemas/AdminRole"
+        is_active:
+          type: boolean
+
+    AdminAuthRequest:
+      type: object
+      required: [init_data]
+      properties:
+        init_data:
+          description: Raw Telegram.WebApp.initData string
+          type: string
+
+    AdminSession:
+      type: object
+      required: [token, expires_at, admin]
+      properties:
+        token:
+          description: Bearer token for the Authorization header
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+        admin:
+          $ref: "#/components/schemas/Admin"
+
+    AdminCategory:
+      type: object
+      required: [id, slug, name_ru, name_ky, sort, product_count]
+      properties:
+        id:
+          type: integer
+          format: int64
+        slug:
+          type: string
+        name_ru:
+          type: string
+        name_ky:
+          type: string
+        sort:
+          type: integer
+          format: int32
+        product_count:
+          type: integer
+          format: int32
+
+    AdminCategoryList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminCategory"
+
+    AdminCategoryInput:
+      type: object
+      required: [slug, name_ru, name_ky, sort]
+      properties:
+        slug:
+          type: string
+          pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
+        name_ru:
+          type: string
+          maxLength: 100
+        name_ky:
+          type: string
+          maxLength: 100
+        sort:
+          type: integer
+          format: int32
+
+    AdminColor:
+      type: object
+      required: [id, name_ru, name_ky, hex]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name_ru:
+          type: string
+        name_ky:
+          type: string
+        hex:
+          type: string
+
+    AdminColorList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminColor"
+
+    AdminColorInput:
+      type: object
+      required: [name_ru, name_ky, hex]
+      properties:
+        name_ru:
+          type: string
+          maxLength: 50
+        name_ky:
+          type: string
+          maxLength: 50
+        hex:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+
+    SizeChartColumnInput:
+      type: object
+      required: [key, name_ru, name_ky]
+      properties:
+        key:
+          type: string
+          pattern: "^[a-z][a-z0-9_]*$"
+        name_ru:
+          type: string
+        name_ky:
+          type: string
+
+    SizeChartData:
+      type: object
+      required: [unit, columns, rows, fit]
+      properties:
+        unit:
+          type: string
+        columns:
+          type: array
+          items:
+            $ref: "#/components/schemas/SizeChartColumnInput"
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/SizeChartRow"
+        fit:
+          type: array
+          items:
+            $ref: "#/components/schemas/SizeFitRule"
+
+    AdminSizeChart:
+      type: object
+      required: [id, name, data]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        data:
+          $ref: "#/components/schemas/SizeChartData"
+
+    AdminSizeChartList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminSizeChart"
+
+    AdminSizeChartInput:
+      type: object
+      required: [name, data]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        data:
+          $ref: "#/components/schemas/SizeChartData"
+
+    AdminProductSummary:
+      type: object
+      required:
+        [id, slug, title_ru, title_ky, category_id, price, is_active, is_new, sort, total_stock, variant_count]
+      properties:
+        id:
+          type: integer
+          format: int64
+        slug:
+          type: string
+        title_ru:
+          type: string
+        title_ky:
+          type: string
+        category_id:
+          type: integer
+          format: int64
+        price:
+          $ref: "#/components/schemas/Money"
+        old_price:
+          $ref: "#/components/schemas/Money"
+        is_active:
+          type: boolean
+        is_new:
+          type: boolean
+        sort:
+          type: integer
+          format: int32
+        total_stock:
+          description: Sum of stock over active variants
+          type: integer
+          format: int32
+        variant_count:
+          type: integer
+          format: int32
+        preview:
+          $ref: "#/components/schemas/ImageSource"
+
+    AdminProductList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminProductSummary"
+
+    AdminProductInput:
+      type: object
+      required:
+        - slug
+        - category_id
+        - title_ru
+        - title_ky
+        - description_ru
+        - description_ky
+        - composition_ru
+        - composition_ky
+        - care_ru
+        - care_ky
+        - price
+        - is_active
+        - is_new
+        - sort
+      properties:
+        slug:
+          type: string
+          pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
+        category_id:
+          type: integer
+          format: int64
+        title_ru:
+          type: string
+          maxLength: 200
+        title_ky:
+          type: string
+          maxLength: 200
+        description_ru:
+          type: string
+        description_ky:
+          type: string
+        composition_ru:
+          type: string
+        composition_ky:
+          type: string
+        care_ru:
+          type: string
+        care_ky:
+          type: string
+        price:
+          $ref: "#/components/schemas/Money"
+        old_price:
+          description: Set to show the product on sale; must exceed price
+          $ref: "#/components/schemas/Money"
+        is_active:
+          type: boolean
+        is_new:
+          type: boolean
+        sort:
+          type: integer
+          format: int32
+        size_chart_id:
+          type: integer
+          format: int64
+
+    AdminVariant:
+      type: object
+      required: [id, color_id, size, sku, stock, is_active]
+      properties:
+        id:
+          type: integer
+          format: int64
+        color_id:
+          type: integer
+          format: int64
+        size:
+          type: string
+        sku:
+          type: string
+        stock:
+          type: integer
+          format: int32
+        is_active:
+          type: boolean
+
+    AdminImage:
+      type: object
+      required: [id, sort, alt_ru, alt_ky, thumb, card]
+      properties:
+        id:
+          type: integer
+          format: int64
+        color_id:
+          description: Absent = shown for every color
+          type: integer
+          format: int64
+        sort:
+          type: integer
+          format: int32
+        alt_ru:
+          type: string
+        alt_ky:
+          type: string
+        thumb:
+          $ref: "#/components/schemas/ImageSource"
+        card:
+          $ref: "#/components/schemas/ImageSource"
+
+    AdminProduct:
+      type: object
+      required:
+        - id
+        - slug
+        - category_id
+        - title_ru
+        - title_ky
+        - description_ru
+        - description_ky
+        - composition_ru
+        - composition_ky
+        - care_ru
+        - care_ky
+        - price
+        - is_active
+        - is_new
+        - sort
+        - variants
+        - images
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          format: int64
+        slug:
+          type: string
+        category_id:
+          type: integer
+          format: int64
+        title_ru:
+          type: string
+        title_ky:
+          type: string
+        description_ru:
+          type: string
+        description_ky:
+          type: string
+        composition_ru:
+          type: string
+        composition_ky:
+          type: string
+        care_ru:
+          type: string
+        care_ky:
+          type: string
+        price:
+          $ref: "#/components/schemas/Money"
+        old_price:
+          $ref: "#/components/schemas/Money"
+        is_active:
+          type: boolean
+        is_new:
+          type: boolean
+        sort:
+          type: integer
+          format: int32
+        size_chart_id:
+          type: integer
+          format: int64
+        variants:
+          description: All variants, in size order
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminVariant"
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminImage"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    VariantMatrixInput:
+      type: object
+      required: [color_ids, sizes, stock]
+      properties:
+        color_ids:
+          type: array
+          minItems: 1
+          items:
+            type: integer
+            format: int64
+        sizes:
+          type: array
+          minItems: 1
+          items:
+            type: string
+          examples: [[S, M, L, XL, XXL]]
+        stock:
+          description: Initial stock of every new variant
+          type: integer
+          format: int32
+          minimum: 0
+
+    AdminVariantInput:
+      type: object
+      required: [sku, is_active]
+      properties:
+        sku:
+          type: string
+          pattern: "^[A-Z0-9][A-Z0-9-]{1,63}$"
+        is_active:
+          type: boolean
+
+    StockInput:
+      type: object
+      required: [stock]
+      properties:
+        stock:
+          type: integer
+          format: int32
+          minimum: 0
+
+    ImageUploadForm:
+      type: object
+      required: [file]
+      properties:
+        file:
+          type: string
+          format: binary
+        color_id:
+          type: integer
+          format: int64
+        alt_ru:
+          type: string
+        alt_ky:
+          type: string
+
+    ImageInput:
+      type: object
+      required: [alt_ru, alt_ky]
+      properties:
+        color_id:
+          description: Absent = shown for every color
+          type: integer
+          format: int64
+        alt_ru:
+          type: string
+          maxLength: 200
+        alt_ky:
+          type: string
+          maxLength: 200
+
+    ImageOrderInput:
+      type: object
+      required: [image_ids]
+      properties:
+        image_ids:
+          type: array
+          items:
+            type: integer
+            format: int64
+
+    AdminDeliveryZone:
+      type: object
+      required: [id, name_ru, name_ky, price, is_active, sort]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name_ru:
+          type: string
+        name_ky:
+          type: string
+        price:
+          $ref: "#/components/schemas/Money"
+        free_from:
+          $ref: "#/components/schemas/Money"
+        is_active:
+          type: boolean
+        sort:
+          type: integer
+          format: int32
+
+    AdminDeliveryZoneList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminDeliveryZone"
+
+    AdminDeliveryZoneInput:
+      type: object
+      required: [name_ru, name_ky, price, is_active, sort]
+      properties:
+        name_ru:
+          type: string
+          maxLength: 100
+        name_ky:
+          type: string
+          maxLength: 100
+        price:
+          $ref: "#/components/schemas/Money"
+        free_from:
+          description: Free delivery from this subtotal (after discount); absent = never free
+          $ref: "#/components/schemas/Money"
+        is_active:
+          type: boolean
+        sort:
+          type: integer
+          format: int32
+
+    AdminPromoCode:
+      type: object
+      required: [id, code, type, value, min_total, used_count, is_active, created_at]
+      properties:
+        id:
+          type: integer
+          format: int64
+        code:
+          type: string
+        type:
+          $ref: "#/components/schemas/PromoType"
+        value:
+          type: integer
+          format: int32
+        min_total:
+          $ref: "#/components/schemas/Money"
+        max_uses:
+          type: integer
+          format: int32
+        used_count:
+          type: integer
+          format: int32
+        valid_from:
+          type: string
+          format: date-time
+        valid_to:
+          type: string
+          format: date-time
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    AdminPromoCodeList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminPromoCode"
+
+    AdminPromoCodeInput:
+      type: object
+      required: [code, type, value, min_total, is_active]
+      properties:
+        code:
+          type: string
+          pattern: "^[A-Za-z0-9_-]{3,32}$"
+        type:
+          $ref: "#/components/schemas/PromoType"
+        value:
+          description: Percent (1–100) or KGS
+          type: integer
+          format: int32
+          minimum: 1
+        min_total:
+          $ref: "#/components/schemas/Money"
+        max_uses:
+          description: Absent = unlimited
+          type: integer
+          format: int32
+          minimum: 1
+        valid_from:
+          type: string
+          format: date-time
+        valid_to:
+          type: string
+          format: date-time
+        is_active:
+          type: boolean
+
+    AdminPickup:
+      type: object
+      required: [address_ru, address_ky, hours_ru, hours_ky]
+      properties:
+        address_ru:
+          type: string
+        address_ky:
+          type: string
+        hours_ru:
+          type: string
+        hours_ky:
+          type: string
+        map_url:
+          type: string
+
+    AdminHero:
+      type: object
+      required: [title_ru, title_ky, subtitle_ru, subtitle_ky]
+      properties:
+        title_ru:
+          type: string
+        title_ky:
+          type: string
+        subtitle_ru:
+          type: string
+        subtitle_ky:
+          type: string
+
+    AdminSettings:
+      type: object
+      required: [contacts, pickup, hero]
+      properties:
+        contacts:
+          $ref: "#/components/schemas/Contacts"
+        pickup:
+          $ref: "#/components/schemas/AdminPickup"
+        hero:
+          $ref: "#/components/schemas/AdminHero"
+
+    AdminOrderSummary:
+      type: object
+      required:
+        [id, number, status, payment_status, payment_method, delivery_method, customer_name, phone, total, items_count, created_at]
+      properties:
+        id:
+          type: integer
+          format: int64
+        number:
+          type: string
+        status:
+          $ref: "#/components/schemas/OrderStatus"
+        payment_status:
+          $ref: "#/components/schemas/PaymentStatus"
+        payment_method:
+          $ref: "#/components/schemas/PaymentMethod"
+        delivery_method:
+          $ref: "#/components/schemas/DeliveryMethod"
+        customer_name:
+          type: string
+        phone:
+          type: string
+        total:
+          $ref: "#/components/schemas/Money"
+        items_count:
+          type: integer
+          format: int32
+        created_at:
+          type: string
+          format: date-time
+
+    OrderStatusCounts:
+      description: Orders per status for the same date and search filters (ignores the status filter)
+      type: object
+      required: [new, confirmed, assembling, shipped, ready_for_pickup, completed, cancelled]
+      properties:
+        new:
+          type: integer
+          format: int32
+        confirmed:
+          type: integer
+          format: int32
+        assembling:
+          type: integer
+          format: int32
+        shipped:
+          type: integer
+          format: int32
+        ready_for_pickup:
+          type: integer
+          format: int32
+        completed:
+          type: integer
+          format: int32
+        cancelled:
+          type: integer
+          format: int32
+
+    AdminOrderList:
+      type: object
+      required: [items, total, page, per_page, status_counts]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminOrderSummary"
+        total:
+          description: Orders matching all filters
+          type: integer
+          format: int32
+        page:
+          type: integer
+          format: int32
+        per_page:
+          type: integer
+          format: int32
+        status_counts:
+          $ref: "#/components/schemas/OrderStatusCounts"
+
+    OrderHistoryEntry:
+      type: object
+      required: [to_status, created_at]
+      properties:
+        from_status:
+          description: Absent on the "order created" entry
+          $ref: "#/components/schemas/OrderStatus"
+        to_status:
+          $ref: "#/components/schemas/OrderStatus"
+        admin_name:
+          description: Absent when the change was not made by an admin
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    AdminOrder:
+      type: object
+      required:
+        - id
+        - number
+        - status
+        - payment_status
+        - payment_method
+        - delivery_method
+        - customer_name
+        - phone
+        - comment
+        - internal_comment
+        - lang
+        - items
+        - subtotal
+        - discount
+        - delivery_price
+        - total
+        - attribution
+        - history
+        - allowed_statuses
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          format: int64
+        number:
+          type: string
+        status:
+          $ref: "#/components/schemas/OrderStatus"
+        payment_status:
+          $ref: "#/components/schemas/PaymentStatus"
+        payment_method:
+          $ref: "#/components/schemas/PaymentMethod"
+        delivery_method:
+          $ref: "#/components/schemas/DeliveryMethod"
+        delivery_zone:
+          $ref: "#/components/schemas/DeliveryZone"
+        address:
+          type: string
+        customer_name:
+          type: string
+        phone:
+          type: string
+        comment:
+          type: string
+        internal_comment:
+          type: string
+        lang:
+          $ref: "#/components/schemas/Lang"
+        promo_code:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        subtotal:
+          $ref: "#/components/schemas/Money"
+        discount:
+          $ref: "#/components/schemas/Money"
+        delivery_price:
+          $ref: "#/components/schemas/Money"
+        total:
+          $ref: "#/components/schemas/Money"
+        attribution:
+          $ref: "#/components/schemas/Attribution"
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderHistoryEntry"
+        allowed_statuses:
+          description: Statuses the order can move to next
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderStatus"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    OrderStatusInput:
+      type: object
+      required: [status]
+      properties:
+        status:
+          $ref: "#/components/schemas/OrderStatus"
+
+    OrderPaymentInput:
+      type: object
+      required: [payment_status]
+      properties:
+        payment_status:
+          $ref: "#/components/schemas/PaymentStatus"
+
+    OrderCommentInput:
+      type: object
+      required: [internal_comment]
+      properties:
+        internal_comment:
+          type: string
+          maxLength: 2000
+
+    PeriodStats:
+      type: object
+      required: [orders, revenue]
+      properties:
+        orders:
+          type: integer
+          format: int32
+        revenue:
+          description: Sum of order totals, KGS (cancelled orders excluded)
+          type: integer
+          format: int64
+
+    TopProduct:
+      type: object
+      required: [title, qty, revenue]
+      properties:
+        product_id:
+          description: Absent if the product was deleted
+          type: integer
+          format: int64
+        title:
+          type: string
+        qty:
+          type: integer
+          format: int32
+        revenue:
+          type: integer
+          format: int64
+
+    LowStockVariant:
+      type: object
+      required: [variant_id, product_id, title, color_name, size, sku, stock]
+      properties:
+        variant_id:
+          type: integer
+          format: int64
+        product_id:
+          type: integer
+          format: int64
+        title:
+          type: string
+        color_name:
+          type: string
+        size:
+          type: string
+        sku:
+          type: string
+        stock:
+          type: integer
+          format: int32
+
+    Dashboard:
+      type: object
+      required: [today, last_7_days, last_30_days, top_products, low_stock]
+      properties:
+        today:
+          $ref: "#/components/schemas/PeriodStats"
+        last_7_days:
+          $ref: "#/components/schemas/PeriodStats"
+        last_30_days:
+          $ref: "#/components/schemas/PeriodStats"
+        top_products:
+          description: Best sellers by units over the last 30 days
+          type: array
+          items:
+            $ref: "#/components/schemas/TopProduct"
+        low_stock:
+          description: Active variants with stock ≤ 2
+          type: array
+          items:
+            $ref: "#/components/schemas/LowStockVariant"
+
+    RevalidateRequest:
+      type: object
+      required: [tags]
+      properties:
+        tags:
+          description: "Cache tags to revalidate: categories, products, product:<slug>, settings"
+          type: array
+          items:
+            type: string

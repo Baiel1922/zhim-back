@@ -29,10 +29,19 @@ func statusFor(code oapi.ErrorCode) int {
 		return http.StatusNotFound
 	case oapi.ErrorCodeMethodNotAllowed:
 		return http.StatusMethodNotAllowed
-	case oapi.ErrorCodeOutOfStock, oapi.ErrorCodeIdempotencyConflict:
+	case oapi.ErrorCodeOutOfStock, oapi.ErrorCodeIdempotencyConflict, oapi.ErrorCodeAlreadyExists,
+		oapi.ErrorCodeInUse, oapi.ErrorCodeInvalidStatusTransition, oapi.ErrorCodeLastOwner:
 		return http.StatusConflict
 	case oapi.ErrorCodeRateLimited:
 		return http.StatusTooManyRequests
+	case oapi.ErrorCodeUnauthorized, oapi.ErrorCodeInitDataInvalid, oapi.ErrorCodeInitDataExpired:
+		return http.StatusUnauthorized
+	case oapi.ErrorCodeForbidden, oapi.ErrorCodeNotAdmin:
+		return http.StatusForbidden
+	case oapi.ErrorCodeFileTooLarge:
+		return http.StatusRequestEntityTooLarge
+	case oapi.ErrorCodeUnsupportedMediaType:
+		return http.StatusUnsupportedMediaType
 	case oapi.ErrorCodeInternalError:
 		return http.StatusInternalServerError
 	default: // promo_*, delivery_zone_unavailable
@@ -42,6 +51,9 @@ func statusFor(code oapi.ErrorCode) int {
 
 func writeError(w http.ResponseWriter, body oapi.Error) {
 	w.Header().Set("Content-Type", "application/json")
+	if body.Code == oapi.ErrorCodeUnauthorized {
+		w.Header().Set("WWW-Authenticate", `Bearer realm="zhim-admin"`)
+	}
 	w.WriteHeader(statusFor(body.Code))
 	_ = json.NewEncoder(w).Encode(body)
 }

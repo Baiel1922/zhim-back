@@ -20,6 +20,19 @@ type Config struct {
 	S3                 S3        `envPrefix:"S3_"`
 	Imgproxy           Imgproxy  `envPrefix:"IMGPROXY_"`
 	RateLimit          RateLimit `envPrefix:"RATE_LIMIT_"`
+	JWT                JWT       `envPrefix:"JWT_"`
+	TelegramBotToken   string    `env:"TELEGRAM_BOT_TOKEN,required,notEmpty"`
+	// Business timezone for date filters, the dashboard and reports.
+	Timezone string `env:"APP_TIMEZONE" envDefault:"Asia/Bishkek"`
+	// Storefront base URL reachable from the API (on-demand revalidation); empty disables it.
+	WebInternalURL   string `env:"WEB_INTERNAL_URL"`
+	RevalidateSecret string `env:"REVALIDATE_SECRET"`
+}
+
+// JWT holds admin token settings.
+type JWT struct {
+	Secret string        `env:"SECRET,required,notEmpty"`
+	TTL    time.Duration `env:"TTL" envDefault:"12h"`
 }
 
 // HTTP holds HTTP server settings.
@@ -36,7 +49,11 @@ type HTTP struct {
 
 // S3 holds object storage settings.
 type S3 struct {
-	Bucket string `env:"BUCKET,required,notEmpty"`
+	Endpoint  string `env:"ENDPOINT,required,notEmpty"`
+	Region    string `env:"REGION" envDefault:"us-east-1"`
+	Bucket    string `env:"BUCKET,required,notEmpty"`
+	AccessKey string `env:"ACCESS_KEY,required,notEmpty"`
+	SecretKey string `env:"SECRET_KEY,required,notEmpty"`
 }
 
 // Imgproxy holds image URL signing settings.

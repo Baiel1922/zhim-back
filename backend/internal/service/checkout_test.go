@@ -37,7 +37,7 @@ func newEnv(t *testing.T) *env {
 	if _, err := seed.Run(t.Context(), store, seed.Options{}); err != nil {
 		t.Fatal(err)
 	}
-	return &env{t: t, ctx: t.Context(), pool: pool, store: store, checkout: service.NewCheckout(store)}
+	return &env{t: t, ctx: t.Context(), pool: pool, store: store, checkout: service.NewCheckout(store, nil)}
 }
 
 func (e *env) variant(sku string) (id int64, stock int32) {
