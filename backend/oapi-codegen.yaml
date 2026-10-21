@@ -8,3 +8,7 @@ generate:
 compatibility:
   # Keep enum constants unambiguous (HealthStatusOk instead of Ok).
   always-prefix-enum-values: true
+output-options:
+  name-normalizer: ToCamelCaseWithInitialisms
+  # Optional arrays/maps are plain slices/maps (nil = absent) instead of *[]T.
+  prefer-skip-optional-pointer-on-container-types: true

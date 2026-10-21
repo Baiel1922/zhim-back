@@ -7,11 +7,119 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/oapi-codegen/runtime"
 )
+
+// Defines values for DeliveryMethod.
+const (
+	DeliveryMethodCourier DeliveryMethod = "courier"
+	DeliveryMethodPickup  DeliveryMethod = "pickup"
+)
+
+// Valid indicates whether the value is a known member of the DeliveryMethod enum.
+func (e DeliveryMethod) Valid() bool {
+	switch e {
+	case DeliveryMethodCourier:
+		return true
+	case DeliveryMethodPickup:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ErrorCode.
+const (
+	ErrorCodeCategoryNotFound        ErrorCode = "category_not_found"
+	ErrorCodeDeliveryZoneUnavailable ErrorCode = "delivery_zone_unavailable"
+	ErrorCodeIdempotencyConflict     ErrorCode = "idempotency_conflict"
+	ErrorCodeInternalError           ErrorCode = "internal_error"
+	ErrorCodeMethodNotAllowed        ErrorCode = "method_not_allowed"
+	ErrorCodeNotFound                ErrorCode = "not_found"
+	ErrorCodeOrderNotFound           ErrorCode = "order_not_found"
+	ErrorCodeOutOfStock              ErrorCode = "out_of_stock"
+	ErrorCodeProductNotFound         ErrorCode = "product_not_found"
+	ErrorCodePromoExhausted          ErrorCode = "promo_exhausted"
+	ErrorCodePromoExpired            ErrorCode = "promo_expired"
+	ErrorCodePromoInactive           ErrorCode = "promo_inactive"
+	ErrorCodePromoMinTotal           ErrorCode = "promo_min_total"
+	ErrorCodePromoNotFound           ErrorCode = "promo_not_found"
+	ErrorCodePromoNotStarted         ErrorCode = "promo_not_started"
+	ErrorCodeRateLimited             ErrorCode = "rate_limited"
+	ErrorCodeValidationError         ErrorCode = "validation_error"
+)
+
+// Valid indicates whether the value is a known member of the ErrorCode enum.
+func (e ErrorCode) Valid() bool {
+	switch e {
+	case ErrorCodeCategoryNotFound:
+		return true
+	case ErrorCodeDeliveryZoneUnavailable:
+		return true
+	case ErrorCodeIdempotencyConflict:
+		return true
+	case ErrorCodeInternalError:
+		return true
+	case ErrorCodeMethodNotAllowed:
+		return true
+	case ErrorCodeNotFound:
+		return true
+	case ErrorCodeOrderNotFound:
+		return true
+	case ErrorCodeOutOfStock:
+		return true
+	case ErrorCodeProductNotFound:
+		return true
+	case ErrorCodePromoExhausted:
+		return true
+	case ErrorCodePromoExpired:
+		return true
+	case ErrorCodePromoInactive:
+		return true
+	case ErrorCodePromoMinTotal:
+		return true
+	case ErrorCodePromoNotFound:
+		return true
+	case ErrorCodePromoNotStarted:
+		return true
+	case ErrorCodeRateLimited:
+		return true
+	case ErrorCodeValidationError:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FieldErrorCode.
+const (
+	FieldErrorCodeInvalid  FieldErrorCode = "invalid"
+	FieldErrorCodeRequired FieldErrorCode = "required"
+	FieldErrorCodeTooLong  FieldErrorCode = "too_long"
+	FieldErrorCodeTooMany  FieldErrorCode = "too_many"
+)
+
+// Valid indicates whether the value is a known member of the FieldErrorCode enum.
+func (e FieldErrorCode) Valid() bool {
+	switch e {
+	case FieldErrorCodeInvalid:
+		return true
+	case FieldErrorCodeRequired:
+		return true
+	case FieldErrorCodeTooLong:
+		return true
+	case FieldErrorCodeTooMany:
+		return true
+	default:
+		return false
+	}
+}
 
 // Defines values for HealthStatus.
 const (
@@ -28,6 +136,245 @@ func (e HealthStatus) Valid() bool {
 	}
 }
 
+// Defines values for Lang.
+const (
+	LangKy Lang = "ky"
+	LangRu Lang = "ru"
+)
+
+// Valid indicates whether the value is a known member of the Lang enum.
+func (e Lang) Valid() bool {
+	switch e {
+	case LangKy:
+		return true
+	case LangRu:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrderStatus.
+const (
+	OrderStatusAssembling     OrderStatus = "assembling"
+	OrderStatusCancelled      OrderStatus = "cancelled"
+	OrderStatusCompleted      OrderStatus = "completed"
+	OrderStatusConfirmed      OrderStatus = "confirmed"
+	OrderStatusNew            OrderStatus = "new"
+	OrderStatusReadyForPickup OrderStatus = "ready_for_pickup"
+	OrderStatusShipped        OrderStatus = "shipped"
+)
+
+// Valid indicates whether the value is a known member of the OrderStatus enum.
+func (e OrderStatus) Valid() bool {
+	switch e {
+	case OrderStatusAssembling:
+		return true
+	case OrderStatusCancelled:
+		return true
+	case OrderStatusCompleted:
+		return true
+	case OrderStatusConfirmed:
+		return true
+	case OrderStatusNew:
+		return true
+	case OrderStatusReadyForPickup:
+		return true
+	case OrderStatusShipped:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PaymentMethod.
+const (
+	PaymentMethodCash     PaymentMethod = "cash"
+	PaymentMethodTransfer PaymentMethod = "transfer"
+)
+
+// Valid indicates whether the value is a known member of the PaymentMethod enum.
+func (e PaymentMethod) Valid() bool {
+	switch e {
+	case PaymentMethodCash:
+		return true
+	case PaymentMethodTransfer:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PaymentStatus.
+const (
+	PaymentStatusPaid   PaymentStatus = "paid"
+	PaymentStatusUnpaid PaymentStatus = "unpaid"
+)
+
+// Valid indicates whether the value is a known member of the PaymentStatus enum.
+func (e PaymentStatus) Valid() bool {
+	switch e {
+	case PaymentStatusPaid:
+		return true
+	case PaymentStatusUnpaid:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProductSort.
+const (
+	ProductSortFeatured  ProductSort = "featured"
+	ProductSortNew       ProductSort = "new"
+	ProductSortPriceAsc  ProductSort = "price_asc"
+	ProductSortPriceDesc ProductSort = "price_desc"
+)
+
+// Valid indicates whether the value is a known member of the ProductSort enum.
+func (e ProductSort) Valid() bool {
+	switch e {
+	case ProductSortFeatured:
+		return true
+	case ProductSortNew:
+		return true
+	case ProductSortPriceAsc:
+		return true
+	case ProductSortPriceDesc:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PromoType.
+const (
+	PromoTypeFixed   PromoType = "fixed"
+	PromoTypePercent PromoType = "percent"
+)
+
+// Valid indicates whether the value is a known member of the PromoType enum.
+func (e PromoType) Valid() bool {
+	switch e {
+	case PromoTypeFixed:
+		return true
+	case PromoTypePercent:
+		return true
+	default:
+		return false
+	}
+}
+
+// Attribution First-visit marketing parameters (UTM, Meta and TikTok click ids)
+type Attribution struct {
+	Fbc         *string `json:"fbc,omitempty"`
+	Fbp         *string `json:"fbp,omitempty"`
+	Ttclid      *string `json:"ttclid,omitempty"`
+	UtmCampaign *string `json:"utm_campaign,omitempty"`
+	UtmContent  *string `json:"utm_content,omitempty"`
+	UtmMedium   *string `json:"utm_medium,omitempty"`
+	UtmSource   *string `json:"utm_source,omitempty"`
+}
+
+// Category defines model for Category.
+type Category struct {
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+}
+
+// CategoryList defines model for CategoryList.
+type CategoryList struct {
+	Items []Category `json:"items"`
+}
+
+// Color defines model for Color.
+type Color struct {
+	// Hex Examples: #0A0A0A
+	Hex  string `json:"hex"`
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
+}
+
+// Contacts defines model for Contacts.
+type Contacts struct {
+	Instagram string   `json:"instagram"`
+	Phones    []string `json:"phones"`
+	Telegram  string   `json:"telegram"`
+	Whatsapp  string   `json:"whatsapp"`
+}
+
+// CreateOrderRequest defines model for CreateOrderRequest.
+type CreateOrderRequest struct {
+	// Address Required for courier delivery
+	Address *string `json:"address,omitempty"`
+
+	// Attribution First-visit marketing parameters (UTM, Meta and TikTok click ids)
+	Attribution    *Attribution   `json:"attribution,omitempty"`
+	Comment        *string        `json:"comment,omitempty"`
+	CustomerName   string         `json:"customer_name"`
+	DeliveryMethod DeliveryMethod `json:"delivery_method"`
+
+	// DeliveryZoneID Required for courier delivery
+	DeliveryZoneID *int64           `json:"delivery_zone_id,omitempty"`
+	Items          []OrderItemInput `json:"items"`
+	PaymentMethod  PaymentMethod    `json:"payment_method"`
+
+	// Phone Kyrgyz number; normalized to +996XXXXXXXXX
+	//
+	// Examples: +996700123456
+	Phone     string  `json:"phone"`
+	PromoCode *string `json:"promo_code,omitempty"`
+
+	// Website Honeypot. Must be absent or empty; hide the field from humans.
+	Website *string `json:"website,omitempty"`
+}
+
+// DeliveryMethod defines model for DeliveryMethod.
+type DeliveryMethod string
+
+// DeliveryZone defines model for DeliveryZone.
+type DeliveryZone struct {
+	// FreeFrom Delivery is free when the subtotal after discount reaches this amount
+	FreeFrom *Money `json:"free_from,omitempty"`
+	ID       int64  `json:"id"`
+	Name     string `json:"name"`
+
+	// Price Amount in KGS (som)
+	Price Money `json:"price"`
+}
+
+// Error defines model for Error.
+type Error struct {
+	Code ErrorCode `json:"code"`
+
+	// Fields Invalid request fields (validation_error)
+	Fields []FieldError `json:"fields,omitempty"`
+
+	// Items Cart lines that cannot be fulfilled (out_of_stock)
+	Items []StockIssue `json:"items,omitempty"`
+
+	// Message Developer-facing description; not meant for display
+	Message string `json:"message"`
+
+	// MinTotal Required cart subtotal (promo_min_total)
+	MinTotal *Money `json:"min_total,omitempty"`
+}
+
+// ErrorCode defines model for ErrorCode.
+type ErrorCode string
+
+// FieldError defines model for FieldError.
+type FieldError struct {
+	Code FieldErrorCode `json:"code"`
+
+	// Field JSON path of the field, e.g. items[0].qty
+	Field string `json:"field"`
+}
+
+// FieldErrorCode defines model for FieldError.Code.
+type FieldErrorCode string
+
 // Health defines model for Health.
 type Health struct {
 	Status HealthStatus `json:"status"`
@@ -36,11 +383,348 @@ type Health struct {
 // HealthStatus defines model for Health.Status.
 type HealthStatus string
 
+// Hero defines model for Hero.
+type Hero struct {
+	Subtitle string `json:"subtitle"`
+	Title    string `json:"title"`
+}
+
+// Image Product photo, 4:5, in thumb/card/full presets
+type Image struct {
+	Alt  string      `json:"alt"`
+	Card ImageSource `json:"card"`
+
+	// ColorID Color the photo belongs to; absent = shown for every color
+	ColorID *int64      `json:"color_id,omitempty"`
+	Full    ImageSource `json:"full"`
+	Thumb   ImageSource `json:"thumb"`
+}
+
+// ImageSource defines model for ImageSource.
+type ImageSource struct {
+	// Src Signed imgproxy URL at the default width (AVIF/WebP by Accept header)
+	Src string `json:"src"`
+
+	// Srcset Ready-to-use srcset value with width descriptors
+	Srcset string `json:"srcset"`
+}
+
+// Lang defines model for Lang.
+type Lang string
+
+// Money Amount in KGS (som)
+type Money = int32
+
+// Order defines model for Order.
+type Order struct {
+	Address        *string        `json:"address,omitempty"`
+	Comment        string         `json:"comment"`
+	CreatedAt      time.Time      `json:"created_at"`
+	CustomerName   string         `json:"customer_name"`
+	DeliveryMethod DeliveryMethod `json:"delivery_method"`
+
+	// DeliveryPrice Amount in KGS (som)
+	DeliveryPrice Money         `json:"delivery_price"`
+	DeliveryZone  *DeliveryZone `json:"delivery_zone,omitempty"`
+
+	// Discount Amount in KGS (som)
+	Discount Money       `json:"discount"`
+	Items    []OrderItem `json:"items"`
+
+	// Number Examples: ZH-000123
+	Number        string        `json:"number"`
+	PaymentMethod PaymentMethod `json:"payment_method"`
+	PaymentStatus PaymentStatus `json:"payment_status"`
+	Phone         string        `json:"phone"`
+
+	// Pickup Pickup point (pickup orders only)
+	Pickup    *Pickup     `json:"pickup,omitempty"`
+	PromoCode *string     `json:"promo_code,omitempty"`
+	Status    OrderStatus `json:"status"`
+
+	// Subtotal Amount in KGS (som)
+	Subtotal Money `json:"subtotal"`
+
+	// Total Amount in KGS (som)
+	Total Money `json:"total"`
+}
+
+// OrderItem defines model for OrderItem.
+type OrderItem struct {
+	ColorName string `json:"color_name"`
+
+	// LineTotal Amount in KGS (som)
+	LineTotal Money `json:"line_total"`
+
+	// Price Amount in KGS (som)
+	Price Money `json:"price"`
+
+	// ProductSlug Absent if the product was deleted from the catalog
+	ProductSlug *string `json:"product_slug,omitempty"`
+	Qty         int32   `json:"qty"`
+	Size        string  `json:"size"`
+	Sku         string  `json:"sku"`
+	Title       string  `json:"title"`
+
+	// VariantID Absent if the variant was deleted from the catalog
+	VariantID *int64 `json:"variant_id,omitempty"`
+}
+
+// OrderItemInput defines model for OrderItemInput.
+type OrderItemInput struct {
+	Qty       int32 `json:"qty"`
+	VariantID int64 `json:"variant_id"`
+}
+
+// OrderStatus defines model for OrderStatus.
+type OrderStatus string
+
+// PaymentMethod defines model for PaymentMethod.
+type PaymentMethod string
+
+// PaymentStatus defines model for PaymentStatus.
+type PaymentStatus string
+
+// Pickup defines model for Pickup.
+type Pickup struct {
+	Address string  `json:"address"`
+	Hours   string  `json:"hours"`
+	MapURL  *string `json:"map_url,omitempty"`
+}
+
+// Product defines model for Product.
+type Product struct {
+	Care     string   `json:"care"`
+	Category Category `json:"category"`
+
+	// Colors All colors of active variants (including sold out)
+	Colors      []Color `json:"colors"`
+	Composition string  `json:"composition"`
+	Description string  `json:"description"`
+	ID          int64   `json:"id"`
+	Images      []Image `json:"images"`
+	IsNew       bool    `json:"is_new"`
+
+	// OldPrice Amount in KGS (som)
+	OldPrice *Money `json:"old_price,omitempty"`
+
+	// Price Amount in KGS (som)
+	Price     Money      `json:"price"`
+	SizeChart *SizeChart `json:"size_chart,omitempty"`
+
+	// Sizes All sizes of active variants, in size order
+	Sizes    []string  `json:"sizes"`
+	Slug     string    `json:"slug"`
+	Title    string    `json:"title"`
+	Variants []Variant `json:"variants"`
+}
+
+// ProductCard defines model for ProductCard.
+type ProductCard struct {
+	CategorySlug string `json:"category_slug"`
+
+	// Colors Colors in stock
+	Colors []Color `json:"colors"`
+	ID     int64   `json:"id"`
+
+	// Images Up to two photos (main and hover)
+	Images  []Image `json:"images"`
+	InStock bool    `json:"in_stock"`
+	IsNew   bool    `json:"is_new"`
+
+	// OldPrice Pre-sale price; present only when the product is on sale
+	OldPrice *Money `json:"old_price,omitempty"`
+
+	// Price Amount in KGS (som)
+	Price Money `json:"price"`
+
+	// Sizes Sizes in stock, in size order
+	Sizes []string `json:"sizes"`
+	Slug  string   `json:"slug"`
+	Title string   `json:"title"`
+}
+
+// ProductList defines model for ProductList.
+type ProductList struct {
+	Items []ProductCard `json:"items"`
+}
+
+// ProductSort defines model for ProductSort.
+type ProductSort string
+
+// PromoType defines model for PromoType.
+type PromoType string
+
+// PromoValidateRequest defines model for PromoValidateRequest.
+type PromoValidateRequest struct {
+	Code string `json:"code"`
+
+	// Subtotal Amount in KGS (som)
+	Subtotal Money `json:"subtotal"`
+}
+
+// PromoValidation defines model for PromoValidation.
+type PromoValidation struct {
+	Code string `json:"code"`
+
+	// Discount Amount in KGS (som)
+	Discount Money     `json:"discount"`
+	Type     PromoType `json:"type"`
+
+	// Value Percent or KGS, depending on type
+	Value int32 `json:"value"`
+}
+
+// PublicSettings defines model for PublicSettings.
+type PublicSettings struct {
+	Contacts      Contacts       `json:"contacts"`
+	DeliveryZones []DeliveryZone `json:"delivery_zones"`
+	Hero          Hero           `json:"hero"`
+	Pickup        Pickup         `json:"pickup"`
+}
+
+// SizeChart defines model for SizeChart.
+type SizeChart struct {
+	Columns []SizeChartColumn `json:"columns"`
+
+	// Fit Size recommendation by height (cm) and weight (kg)
+	Fit  []SizeFitRule  `json:"fit"`
+	Rows []SizeChartRow `json:"rows"`
+
+	// Unit Examples: cm
+	Unit string `json:"unit"`
+}
+
+// SizeChartColumn defines model for SizeChartColumn.
+type SizeChartColumn struct {
+	Key  string `json:"key"`
+	Name string `json:"name"`
+}
+
+// SizeChartRow defines model for SizeChartRow.
+type SizeChartRow struct {
+	Size string `json:"size"`
+
+	// Values Measurement ranges keyed by column key
+	Values map[string]string `json:"values"`
+}
+
+// SizeFitRule defines model for SizeFitRule.
+type SizeFitRule struct {
+	HeightMax int    `json:"height_max"`
+	HeightMin int    `json:"height_min"`
+	Size      string `json:"size"`
+	WeightMax int    `json:"weight_max"`
+	WeightMin int    `json:"weight_min"`
+}
+
+// StockIssue defines model for StockIssue.
+type StockIssue struct {
+	// Available Units that can still be ordered (0 if sold out or unavailable)
+	Available int32 `json:"available"`
+	VariantID int64 `json:"variant_id"`
+}
+
+// Variant defines model for Variant.
+type Variant struct {
+	ColorID int64  `json:"color_id"`
+	ID      int64  `json:"id"`
+	Size    string `json:"size"`
+	Sku     string `json:"sku"`
+	Stock   int32  `json:"stock"`
+}
+
+// BadRequest defines model for BadRequest.
+type BadRequest = Error
+
+// Conflict defines model for Conflict.
+type Conflict = Error
+
+// NotFound defines model for NotFound.
+type NotFound = Error
+
+// TooManyRequests defines model for TooManyRequests.
+type TooManyRequests = Error
+
+// Unprocessable defines model for Unprocessable.
+type Unprocessable = Error
+
+// ListCategoriesParams defines parameters for ListCategories.
+type ListCategoriesParams struct {
+	// Lang Response language
+	Lang *Lang `form:"lang,omitempty" json:"lang,omitempty"`
+}
+
+// CreateOrderParams defines parameters for CreateOrder.
+type CreateOrderParams struct {
+	// Lang Response language
+	Lang *Lang `form:"lang,omitempty" json:"lang,omitempty"`
+
+	// IdempotencyKey Client-generated unique key (UUID recommended), 8–128 characters
+	IdempotencyKey string `json:"Idempotency-Key"`
+}
+
+// GetOrderParams defines parameters for GetOrder.
+type GetOrderParams struct {
+	// Lang Response language
+	Lang  *Lang  `form:"lang,omitempty" json:"lang,omitempty"`
+	Phone string `form:"phone" json:"phone"`
+}
+
+// ListProductsParams defines parameters for ListProducts.
+type ListProductsParams struct {
+	// Lang Response language
+	Lang *Lang `form:"lang,omitempty" json:"lang,omitempty"`
+
+	// Category Category slug; omit for all products
+	Category *string      `form:"category,omitempty" json:"category,omitempty"`
+	Sort     *ProductSort `form:"sort,omitempty" json:"sort,omitempty"`
+}
+
+// GetProductParams defines parameters for GetProduct.
+type GetProductParams struct {
+	// Lang Response language
+	Lang *Lang `form:"lang,omitempty" json:"lang,omitempty"`
+}
+
+// GetPublicSettingsParams defines parameters for GetPublicSettings.
+type GetPublicSettingsParams struct {
+	// Lang Response language
+	Lang *Lang `form:"lang,omitempty" json:"lang,omitempty"`
+}
+
+// CreateOrderJSONRequestBody defines body for CreateOrder for application/json ContentType.
+type CreateOrderJSONRequestBody = CreateOrderRequest
+
+// ValidatePromoJSONRequestBody defines body for ValidatePromo for application/json ContentType.
+type ValidatePromoJSONRequestBody = PromoValidateRequest
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// GetHealthz Liveness probe
 	// (GET /healthz)
 	GetHealthz(w http.ResponseWriter, r *http.Request)
+	// ListCategories Categories in display order
+	// (GET /v1/categories)
+	ListCategories(w http.ResponseWriter, r *http.Request, params ListCategoriesParams)
+	// CreateOrder Place an order (guest checkout)
+	// (POST /v1/orders)
+	CreateOrder(w http.ResponseWriter, r *http.Request, params CreateOrderParams)
+	// GetOrder Order status for the thank-you page
+	// (GET /v1/orders/{number})
+	GetOrder(w http.ResponseWriter, r *http.Request, number string, params GetOrderParams)
+	// ListProducts Active products for the catalog grid
+	// (GET /v1/products)
+	ListProducts(w http.ResponseWriter, r *http.Request, params ListProductsParams)
+	// GetProduct Full product with variants, images and size chart
+	// (GET /v1/products/{slug})
+	GetProduct(w http.ResponseWriter, r *http.Request, slug string, params GetProductParams)
+	// ValidatePromo Check a promo code against a cart subtotal
+	// (POST /v1/promo/validate)
+	ValidatePromo(w http.ResponseWriter, r *http.Request)
+	// GetPublicSettings Contacts, pickup point, hero texts and delivery zones
+	// (GET /v1/settings/public)
+	GetPublicSettings(w http.ResponseWriter, r *http.Request, params GetPublicSettingsParams)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -50,6 +734,48 @@ type Unimplemented struct{}
 // GetHealthz Liveness probe
 // (GET /healthz)
 func (_ Unimplemented) GetHealthz(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListCategories Categories in display order
+// (GET /v1/categories)
+func (_ Unimplemented) ListCategories(w http.ResponseWriter, r *http.Request, params ListCategoriesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateOrder Place an order (guest checkout)
+// (POST /v1/orders)
+func (_ Unimplemented) CreateOrder(w http.ResponseWriter, r *http.Request, params CreateOrderParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetOrder Order status for the thank-you page
+// (GET /v1/orders/{number})
+func (_ Unimplemented) GetOrder(w http.ResponseWriter, r *http.Request, number string, params GetOrderParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListProducts Active products for the catalog grid
+// (GET /v1/products)
+func (_ Unimplemented) ListProducts(w http.ResponseWriter, r *http.Request, params ListProductsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetProduct Full product with variants, images and size chart
+// (GET /v1/products/{slug})
+func (_ Unimplemented) GetProduct(w http.ResponseWriter, r *http.Request, slug string, params GetProductParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ValidatePromo Check a promo code against a cart subtotal
+// (POST /v1/promo/validate)
+func (_ Unimplemented) ValidatePromo(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetPublicSettings Contacts, pickup point, hero texts and delivery zones
+// (GET /v1/settings/public)
+func (_ Unimplemented) GetPublicSettings(w http.ResponseWriter, r *http.Request, params GetPublicSettingsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -67,6 +793,300 @@ func (siw *ServerInterfaceWrapper) GetHealthz(w http.ResponseWriter, r *http.Req
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetHealthz(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCategories operation middleware
+func (siw *ServerInterfaceWrapper) ListCategories(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCategoriesParams
+
+	// ------------- Optional query parameter "lang" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "lang", r.URL.Query(), &params.Lang, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "lang"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "lang", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCategories(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateOrder operation middleware
+func (siw *ServerInterfaceWrapper) CreateOrder(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateOrderParams
+
+	// ------------- Optional query parameter "lang" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "lang", r.URL.Query(), &params.Lang, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "lang"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "lang", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey string
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateOrder(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetOrder operation middleware
+func (siw *ServerInterfaceWrapper) GetOrder(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "number" -------------
+	var number string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "number", chi.URLParam(r, "number"), &number, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "number", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetOrderParams
+
+	// ------------- Optional query parameter "lang" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "lang", r.URL.Query(), &params.Lang, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "lang"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "lang", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "phone" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "phone", r.URL.Query(), &params.Phone, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "phone"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "phone", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetOrder(w, r, number, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListProducts operation middleware
+func (siw *ServerInterfaceWrapper) ListProducts(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListProductsParams
+
+	// ------------- Optional query parameter "lang" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "lang", r.URL.Query(), &params.Lang, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "lang"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "lang", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "category" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "category", r.URL.Query(), &params.Category, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "category"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "category", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "sort" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "sort", r.URL.Query(), &params.Sort, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "sort"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sort", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListProducts(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetProduct operation middleware
+func (siw *ServerInterfaceWrapper) GetProduct(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "slug" -------------
+	var slug string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "slug", chi.URLParam(r, "slug"), &slug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "slug", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetProductParams
+
+	// ------------- Optional query parameter "lang" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "lang", r.URL.Query(), &params.Lang, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "lang"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "lang", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProduct(w, r, slug, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ValidatePromo operation middleware
+func (siw *ServerInterfaceWrapper) ValidatePromo(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ValidatePromo(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetPublicSettings operation middleware
+func (siw *ServerInterfaceWrapper) GetPublicSettings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetPublicSettingsParams
+
+	// ------------- Optional query parameter "lang" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "lang", r.URL.Query(), &params.Lang, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "lang"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "lang", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPublicSettings(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -192,9 +1212,47 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/healthz", wrapper.GetHealthz)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/categories", wrapper.ListCategories)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/products", wrapper.ListProducts)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/products/{slug}", wrapper.GetProduct)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/settings/public", wrapper.GetPublicSettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/promo/validate", wrapper.ValidatePromo)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/orders", wrapper.CreateOrder)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/orders/{number}", wrapper.GetOrder)
+	})
 
 	return r
 }
+
+type BadRequestJSONResponse Error
+
+type ConflictJSONResponse Error
+
+type NotFoundJSONResponse Error
+
+type TooManyRequestsResponseHeaders struct {
+	RetryAfter *int
+}
+type TooManyRequestsJSONResponse struct {
+	Body Error
+
+	Headers TooManyRequestsResponseHeaders
+}
+
+type UnprocessableJSONResponse Error
 
 type GetHealthzRequestObject struct {
 }
@@ -217,11 +1275,422 @@ func (response GetHealthz200JSONResponse) VisitGetHealthzResponse(w http.Respons
 	return err
 }
 
+type ListCategoriesRequestObject struct {
+	Params ListCategoriesParams
+}
+
+type ListCategoriesResponseObject interface {
+	VisitListCategoriesResponse(w http.ResponseWriter) error
+}
+
+type ListCategories200JSONResponse CategoryList
+
+func (response ListCategories200JSONResponse) VisitListCategoriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListCategories400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListCategories400JSONResponse) VisitListCategoriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOrderRequestObject struct {
+	Params CreateOrderParams
+	Body   *CreateOrderJSONRequestBody
+}
+
+type CreateOrderResponseObject interface {
+	VisitCreateOrderResponse(w http.ResponseWriter) error
+}
+
+type CreateOrder201JSONResponse Order
+
+func (response CreateOrder201JSONResponse) VisitCreateOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOrder400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateOrder400JSONResponse) VisitCreateOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOrder409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateOrder409JSONResponse) VisitCreateOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOrder422JSONResponse struct{ UnprocessableJSONResponse }
+
+func (response CreateOrder422JSONResponse) VisitCreateOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOrder429JSONResponse struct{ TooManyRequestsJSONResponse }
+
+func (response CreateOrder429JSONResponse) VisitCreateOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOrderRequestObject struct {
+	Number string `json:"number"`
+	Params GetOrderParams
+}
+
+type GetOrderResponseObject interface {
+	VisitGetOrderResponse(w http.ResponseWriter) error
+}
+
+type GetOrder200JSONResponse Order
+
+func (response GetOrder200JSONResponse) VisitGetOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOrder400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetOrder400JSONResponse) VisitGetOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOrder404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetOrder404JSONResponse) VisitGetOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOrder429JSONResponse struct{ TooManyRequestsJSONResponse }
+
+func (response GetOrder429JSONResponse) VisitGetOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProductsRequestObject struct {
+	Params ListProductsParams
+}
+
+type ListProductsResponseObject interface {
+	VisitListProductsResponse(w http.ResponseWriter) error
+}
+
+type ListProducts200JSONResponse ProductList
+
+func (response ListProducts200JSONResponse) VisitListProductsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProducts400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListProducts400JSONResponse) VisitListProductsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProducts404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ListProducts404JSONResponse) VisitListProductsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProductRequestObject struct {
+	Slug   string `json:"slug"`
+	Params GetProductParams
+}
+
+type GetProductResponseObject interface {
+	VisitGetProductResponse(w http.ResponseWriter) error
+}
+
+type GetProduct200JSONResponse Product
+
+func (response GetProduct200JSONResponse) VisitGetProductResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProduct400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetProduct400JSONResponse) VisitGetProductResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProduct404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetProduct404JSONResponse) VisitGetProductResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ValidatePromoRequestObject struct {
+	Body *ValidatePromoJSONRequestBody
+}
+
+type ValidatePromoResponseObject interface {
+	VisitValidatePromoResponse(w http.ResponseWriter) error
+}
+
+type ValidatePromo200JSONResponse PromoValidation
+
+func (response ValidatePromo200JSONResponse) VisitValidatePromoResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ValidatePromo400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ValidatePromo400JSONResponse) VisitValidatePromoResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ValidatePromo422JSONResponse struct{ UnprocessableJSONResponse }
+
+func (response ValidatePromo422JSONResponse) VisitValidatePromoResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ValidatePromo429JSONResponse struct{ TooManyRequestsJSONResponse }
+
+func (response ValidatePromo429JSONResponse) VisitValidatePromoResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPublicSettingsRequestObject struct {
+	Params GetPublicSettingsParams
+}
+
+type GetPublicSettingsResponseObject interface {
+	VisitGetPublicSettingsResponse(w http.ResponseWriter) error
+}
+
+type GetPublicSettings200JSONResponse PublicSettings
+
+func (response GetPublicSettings200JSONResponse) VisitGetPublicSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPublicSettings400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetPublicSettings400JSONResponse) VisitGetPublicSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// GetHealthz Liveness probe
 	// (GET /healthz)
 	GetHealthz(ctx context.Context, request GetHealthzRequestObject) (GetHealthzResponseObject, error)
+	// ListCategories Categories in display order
+	// (GET /v1/categories)
+	ListCategories(ctx context.Context, request ListCategoriesRequestObject) (ListCategoriesResponseObject, error)
+	// CreateOrder Place an order (guest checkout)
+	// (POST /v1/orders)
+	CreateOrder(ctx context.Context, request CreateOrderRequestObject) (CreateOrderResponseObject, error)
+	// GetOrder Order status for the thank-you page
+	// (GET /v1/orders/{number})
+	GetOrder(ctx context.Context, request GetOrderRequestObject) (GetOrderResponseObject, error)
+	// ListProducts Active products for the catalog grid
+	// (GET /v1/products)
+	ListProducts(ctx context.Context, request ListProductsRequestObject) (ListProductsResponseObject, error)
+	// GetProduct Full product with variants, images and size chart
+	// (GET /v1/products/{slug})
+	GetProduct(ctx context.Context, request GetProductRequestObject) (GetProductResponseObject, error)
+	// ValidatePromo Check a promo code against a cart subtotal
+	// (POST /v1/promo/validate)
+	ValidatePromo(ctx context.Context, request ValidatePromoRequestObject) (ValidatePromoResponseObject, error)
+	// GetPublicSettings Contacts, pickup point, hero texts and delivery zones
+	// (GET /v1/settings/public)
+	GetPublicSettings(ctx context.Context, request GetPublicSettingsRequestObject) (GetPublicSettingsResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -280,6 +1749,202 @@ func (sh *strictHandler) GetHealthz(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetHealthzResponseObject); ok {
 		if err := validResponse.VisitGetHealthzResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCategories operation middleware
+func (sh *strictHandler) ListCategories(w http.ResponseWriter, r *http.Request, params ListCategoriesParams) {
+	var request ListCategoriesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCategories(ctx, request.(ListCategoriesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCategories")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCategoriesResponseObject); ok {
+		if err := validResponse.VisitListCategoriesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateOrder operation middleware
+func (sh *strictHandler) CreateOrder(w http.ResponseWriter, r *http.Request, params CreateOrderParams) {
+	var request CreateOrderRequestObject
+
+	request.Params = params
+
+	var body CreateOrderJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateOrder(ctx, request.(CreateOrderRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateOrder")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateOrderResponseObject); ok {
+		if err := validResponse.VisitCreateOrderResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetOrder operation middleware
+func (sh *strictHandler) GetOrder(w http.ResponseWriter, r *http.Request, number string, params GetOrderParams) {
+	var request GetOrderRequestObject
+
+	request.Number = number
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetOrder(ctx, request.(GetOrderRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetOrder")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetOrderResponseObject); ok {
+		if err := validResponse.VisitGetOrderResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListProducts operation middleware
+func (sh *strictHandler) ListProducts(w http.ResponseWriter, r *http.Request, params ListProductsParams) {
+	var request ListProductsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListProducts(ctx, request.(ListProductsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListProducts")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListProductsResponseObject); ok {
+		if err := validResponse.VisitListProductsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProduct operation middleware
+func (sh *strictHandler) GetProduct(w http.ResponseWriter, r *http.Request, slug string, params GetProductParams) {
+	var request GetProductRequestObject
+
+	request.Slug = slug
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetProduct(ctx, request.(GetProductRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProduct")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProductResponseObject); ok {
+		if err := validResponse.VisitGetProductResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ValidatePromo operation middleware
+func (sh *strictHandler) ValidatePromo(w http.ResponseWriter, r *http.Request) {
+	var request ValidatePromoRequestObject
+
+	var body ValidatePromoJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ValidatePromo(ctx, request.(ValidatePromoRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ValidatePromo")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ValidatePromoResponseObject); ok {
+		if err := validResponse.VisitValidatePromoResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetPublicSettings operation middleware
+func (sh *strictHandler) GetPublicSettings(w http.ResponseWriter, r *http.Request, params GetPublicSettingsParams) {
+	var request GetPublicSettingsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPublicSettings(ctx, request.(GetPublicSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPublicSettings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetPublicSettingsResponseObject); ok {
+		if err := validResponse.VisitGetPublicSettingsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

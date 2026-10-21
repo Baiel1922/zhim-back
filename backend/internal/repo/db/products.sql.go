@@ -68,6 +68,54 @@ func (q *Queries) DecrementVariantStock(ctx context.Context, arg DecrementVarian
 	return result.RowsAffected(), nil
 }
 
+const getActiveProductBySlug = `-- name: GetActiveProductBySlug :one
+SELECT
+    p.id, p.slug, p.category_id, p.title_ru, p.title_ky, p.description_ru, p.description_ky, p.composition_ru, p.composition_ky, p.care_ru, p.care_ky, p.price, p.old_price, p.is_active, p.is_new, p.sort, p.size_chart_id, p.created_at, p.updated_at,
+    c.slug    AS category_slug,
+    c.name_ru AS category_name_ru,
+    c.name_ky AS category_name_ky
+FROM products p
+JOIN categories c ON c.id = p.category_id
+WHERE p.slug = $1 AND p.is_active
+`
+
+type GetActiveProductBySlugRow struct {
+	Product        Product
+	CategorySlug   string
+	CategoryNameRu string
+	CategoryNameKy string
+}
+
+func (q *Queries) GetActiveProductBySlug(ctx context.Context, slug string) (GetActiveProductBySlugRow, error) {
+	row := q.db.QueryRow(ctx, getActiveProductBySlug, slug)
+	var i GetActiveProductBySlugRow
+	err := row.Scan(
+		&i.Product.ID,
+		&i.Product.Slug,
+		&i.Product.CategoryID,
+		&i.Product.TitleRu,
+		&i.Product.TitleKy,
+		&i.Product.DescriptionRu,
+		&i.Product.DescriptionKy,
+		&i.Product.CompositionRu,
+		&i.Product.CompositionKy,
+		&i.Product.CareRu,
+		&i.Product.CareKy,
+		&i.Product.Price,
+		&i.Product.OldPrice,
+		&i.Product.IsActive,
+		&i.Product.IsNew,
+		&i.Product.Sort,
+		&i.Product.SizeChartID,
+		&i.Product.CreatedAt,
+		&i.Product.UpdatedAt,
+		&i.CategorySlug,
+		&i.CategoryNameRu,
+		&i.CategoryNameKy,
+	)
+	return i, err
+}
+
 const getProductByID = `-- name: GetProductByID :one
 SELECT id, slug, category_id, title_ru, title_ky, description_ru, description_ky, composition_ru, composition_ky, care_ru, care_ky, price, old_price, is_active, is_new, sort, size_chart_id, created_at, updated_at FROM products
 WHERE id = $1
@@ -290,6 +338,36 @@ func (q *Queries) ListProductImages(ctx context.Context, productID int64) ([]Pro
 	return items, nil
 }
 
+const listProductSlugs = `-- name: ListProductSlugs :many
+SELECT id, slug FROM products
+WHERE id = ANY ($1::bigint[])
+`
+
+type ListProductSlugsRow struct {
+	ID   int64
+	Slug string
+}
+
+func (q *Queries) ListProductSlugs(ctx context.Context, ids []int64) ([]ListProductSlugsRow, error) {
+	rows, err := q.db.Query(ctx, listProductSlugs, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListProductSlugsRow{}
+	for rows.Next() {
+		var i ListProductSlugsRow
+		if err := rows.Scan(&i.ID, &i.Slug); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listVariantsByProduct = `-- name: ListVariantsByProduct :many
 SELECT
     v.id, v.product_id, v.color_id, v.size, v.sku, v.stock, v.is_active, v.created_at, v.updated_at,
@@ -299,7 +377,7 @@ SELECT
 FROM product_variants v
 JOIN colors c ON c.id = v.color_id
 WHERE v.product_id = $1
-ORDER BY v.color_id, size_rank(v.size), v.size
+ORDER BY size_rank(v.size), v.size, v.color_id
 `
 
 type ListVariantsByProductRow struct {
@@ -309,6 +387,7 @@ type ListVariantsByProductRow struct {
 	ColorHex       string
 }
 
+// Size order first, so distinct sizes come out ranked when scanning rows.
 func (q *Queries) ListVariantsByProduct(ctx context.Context, productID int64) ([]ListVariantsByProductRow, error) {
 	rows, err := q.db.Query(ctx, listVariantsByProduct, productID)
 	if err != nil {

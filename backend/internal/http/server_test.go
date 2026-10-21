@@ -12,7 +12,7 @@ import (
 )
 
 func TestHealthz(t *testing.T) {
-	router := apihttp.NewRouter(slog.New(slog.NewTextHandler(io.Discard, nil)))
+	router := apihttp.NewRouter(apihttp.Deps{Log: slog.New(slog.NewTextHandler(io.Discard, nil))})
 
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/healthz", nil))
@@ -32,7 +32,7 @@ func TestHealthz(t *testing.T) {
 }
 
 func TestUnknownRouteIs404(t *testing.T) {
-	router := apihttp.NewRouter(slog.New(slog.NewTextHandler(io.Discard, nil)))
+	router := apihttp.NewRouter(apihttp.Deps{Log: slog.New(slog.NewTextHandler(io.Discard, nil))})
 
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/nope", nil))

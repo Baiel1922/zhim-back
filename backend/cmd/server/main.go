@@ -12,6 +12,9 @@ import (
 
 	"github.com/Baiel1922/zhim-back/backend/internal/config"
 	apihttp "github.com/Baiel1922/zhim-back/backend/internal/http"
+	"github.com/Baiel1922/zhim-back/backend/internal/imgproxy"
+	"github.com/Baiel1922/zhim-back/backend/internal/repo"
+	"github.com/Baiel1922/zhim-back/backend/internal/service"
 )
 
 func main() {
@@ -33,9 +36,32 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	pool, err := repo.NewPool(ctx, cfg.DatabaseURL)
+	if err != nil {
+		return err
+	}
+	defer pool.Close()
+	store := repo.NewStore(pool)
+
+	images, err := imgproxy.NewSigner(cfg.Imgproxy.URL, cfg.S3.Bucket, cfg.Imgproxy.Key, cfg.Imgproxy.Salt)
+	if err != nil {
+		return err
+	}
+
+	router := apihttp.NewRouter(apihttp.Deps{
+		Log:               log,
+		Catalog:           service.NewCatalog(store),
+		Checkout:          service.NewCheckout(store),
+		Images:            images,
+		CORSOrigins:       cfg.CORSAllowedOrigins,
+		TrustedProxyCIDRs: cfg.HTTP.TrustedProxyCIDRs,
+		CheckoutRateLimit: cfg.RateLimit.CheckoutPerMinute,
+		LookupRateLimit:   cfg.RateLimit.LookupPerMinute,
+	})
+
 	srv := &http.Server{
 		Addr:         cfg.HTTP.Addr,
-		Handler:      apihttp.NewRouter(log),
+		Handler:      router,
 		ReadTimeout:  cfg.HTTP.ReadTimeout,
 		WriteTimeout: cfg.HTTP.WriteTimeout,
 		IdleTimeout:  cfg.HTTP.IdleTimeout,

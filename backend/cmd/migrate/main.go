@@ -42,7 +42,7 @@ func run(args []string) error {
 	}
 
 	cfg, err := env.ParseAs[struct {
-		DatabaseURL string `env:"DATABASE_URL,required"`
+		DatabaseURL string `env:"DATABASE_URL,required,notEmpty"`
 	}]()
 	if err != nil {
 		return fmt.Errorf("parse env: %w", err)

@@ -51,6 +51,16 @@ ORDER BY
 SELECT * FROM products
 WHERE slug = $1;
 
+-- name: GetActiveProductBySlug :one
+SELECT
+    sqlc.embed(p),
+    c.slug    AS category_slug,
+    c.name_ru AS category_name_ru,
+    c.name_ky AS category_name_ky
+FROM products p
+JOIN categories c ON c.id = p.category_id
+WHERE p.slug = $1 AND p.is_active;
+
 -- name: GetProductByID :one
 SELECT * FROM products
 WHERE id = $1;
@@ -92,7 +102,8 @@ SELECT
 FROM product_variants v
 JOIN colors c ON c.id = v.color_id
 WHERE v.product_id = $1
-ORDER BY v.color_id, size_rank(v.size), v.size;
+-- Size order first, so distinct sizes come out ranked when scanning rows.
+ORDER BY size_rank(v.size), v.size, v.color_id;
 
 -- name: UpsertVariant :one
 INSERT INTO product_variants (product_id, color_id, size, sku, stock, is_active)
@@ -148,3 +159,7 @@ ORDER BY sort, id;
 INSERT INTO product_images (product_id, color_id, s3_key, sort, alt_ru, alt_ky)
 VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING *;
+
+-- name: ListProductSlugs :many
+SELECT id, slug FROM products
+WHERE id = ANY (sqlc.arg('ids')::bigint[]);

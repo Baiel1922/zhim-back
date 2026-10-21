@@ -11,9 +11,15 @@ import (
 
 // Config is the full runtime configuration of the backend binary.
 type Config struct {
-	Env      string     `env:"APP_ENV" envDefault:"development"`
-	LogLevel slog.Level `env:"LOG_LEVEL" envDefault:"info"`
-	HTTP     HTTP       `envPrefix:"HTTP_"`
+	Env         string     `env:"APP_ENV" envDefault:"development"`
+	LogLevel    slog.Level `env:"LOG_LEVEL" envDefault:"info"`
+	DatabaseURL string     `env:"DATABASE_URL,required,notEmpty"`
+	HTTP        HTTP       `envPrefix:"HTTP_"`
+	// Storefront and admin origins allowed to call the API from browsers.
+	CORSAllowedOrigins []string  `env:"CORS_ALLOWED_ORIGINS" envSeparator:","`
+	S3                 S3        `envPrefix:"S3_"`
+	Imgproxy           Imgproxy  `envPrefix:"IMGPROXY_"`
+	RateLimit          RateLimit `envPrefix:"RATE_LIMIT_"`
 }
 
 // HTTP holds HTTP server settings.
@@ -23,6 +29,29 @@ type HTTP struct {
 	WriteTimeout    time.Duration `env:"WRITE_TIMEOUT" envDefault:"30s"`
 	IdleTimeout     time.Duration `env:"IDLE_TIMEOUT" envDefault:"120s"`
 	ShutdownTimeout time.Duration `env:"SHUTDOWN_TIMEOUT" envDefault:"15s"`
+	// CIDRs of reverse proxies whose X-Forwarded-For is trusted for the client IP.
+	// Empty: the TCP peer address is the client IP.
+	TrustedProxyCIDRs []string `env:"TRUSTED_PROXY_CIDRS" envSeparator:","`
+}
+
+// S3 holds object storage settings.
+type S3 struct {
+	Bucket string `env:"BUCKET,required,notEmpty"`
+}
+
+// Imgproxy holds image URL signing settings.
+type Imgproxy struct {
+	URL  string `env:"URL,required,notEmpty"`
+	Key  string `env:"KEY,required,notEmpty"`
+	Salt string `env:"SALT,required,notEmpty"`
+}
+
+// RateLimit holds per-IP request limits (requests per minute; 0 disables).
+type RateLimit struct {
+	// Order creation and promo code checks.
+	CheckoutPerMinute int `env:"CHECKOUT_PER_MINUTE" envDefault:"10"`
+	// Order status lookups.
+	LookupPerMinute int `env:"LOOKUP_PER_MINUTE" envDefault:"60"`
 }
 
 // Load parses the environment into a Config.

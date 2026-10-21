@@ -18,7 +18,7 @@ import (
 
 type config struct {
 	Env             string `env:"APP_ENV" envDefault:"development"`
-	DatabaseURL     string `env:"DATABASE_URL,required"`
+	DatabaseURL     string `env:"DATABASE_URL,required,notEmpty"`
 	OwnerTelegramID int64  `env:"SEED_OWNER_TELEGRAM_ID"`
 	OwnerName       string `env:"SEED_OWNER_NAME" envDefault:"Owner"`
 }

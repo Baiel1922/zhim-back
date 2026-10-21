@@ -1,10 +1,14 @@
 openapi: 3.1.0
 info:
   title: zhim.kg API
-  version: 0.1.0
+  version: 0.2.0
   description: |
     Single source of truth for the zhim.kg API.
     Go server stubs and TypeScript clients are generated from this file (`make gen`).
+
+    Money is integer KGS (som). Public endpoints take `?lang=ru|ky` (default `ru`) and
+    return texts in that language. Errors always use the `Error` schema; the frontend
+    maps `code` to a translated message.
 servers:
   - url: http://localhost:8090
     description: Local development
@@ -14,6 +18,10 @@ servers:
 tags:
   - name: system
     description: Service health and diagnostics
+  - name: catalog
+    description: Storefront catalog and settings
+  - name: checkout
+    description: Promo codes and orders
 
 paths:
   /healthz:
@@ -29,7 +37,239 @@ paths:
               schema:
                 $ref: "#/components/schemas/Health"
 
+  /v1/categories:
+    get:
+      operationId: listCategories
+      summary: Categories in display order
+      tags: [catalog]
+      parameters:
+        - $ref: "#/components/parameters/Lang"
+      responses:
+        "200":
+          description: Categories
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /v1/products:
+    get:
+      operationId: listProducts
+      summary: Active products for the catalog grid
+      tags: [catalog]
+      parameters:
+        - $ref: "#/components/parameters/Lang"
+        - name: category
+          in: query
+          description: Category slug; omit for all products
+          schema:
+            type: string
+        - name: sort
+          in: query
+          schema:
+            $ref: "#/components/schemas/ProductSort"
+      responses:
+        "200":
+          description: Products
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/products/{slug}:
+    get:
+      operationId: getProduct
+      summary: Full product with variants, images and size chart
+      tags: [catalog]
+      parameters:
+        - $ref: "#/components/parameters/Lang"
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/settings/public:
+    get:
+      operationId: getPublicSettings
+      summary: Contacts, pickup point, hero texts and delivery zones
+      tags: [catalog]
+      parameters:
+        - $ref: "#/components/parameters/Lang"
+      responses:
+        "200":
+          description: Public settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicSettings"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /v1/promo/validate:
+    post:
+      operationId: validatePromo
+      summary: Check a promo code against a cart subtotal
+      description: Rate limited per IP. Errors use the promo_* codes.
+      tags: [checkout]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PromoValidateRequest"
+      responses:
+        "200":
+          description: The code applies
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromoValidation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /v1/orders:
+    post:
+      operationId: createOrder
+      summary: Place an order (guest checkout)
+      description: |
+        Prices, discount and delivery are recalculated on the server; the response is the
+        source of truth. Retrying with the same `Idempotency-Key` returns the original order.
+        Rate limited per IP.
+      tags: [checkout]
+      parameters:
+        - $ref: "#/components/parameters/Lang"
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: Client-generated unique key (UUID recommended), 8–128 characters
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderRequest"
+      responses:
+        "201":
+          description: Order created (or replayed for a repeated Idempotency-Key)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /v1/orders/{number}:
+    get:
+      operationId: getOrder
+      summary: Order status for the thank-you page
+      description: The phone acts as a second factor; a wrong phone yields 404. Rate limited per IP.
+      tags: [checkout]
+      parameters:
+        - $ref: "#/components/parameters/Lang"
+        - name: number
+          in: path
+          required: true
+          schema:
+            type: string
+            examples: [ZH-000123]
+        - name: phone
+          in: query
+          required: true
+          schema:
+            type: string
+            examples: ["+996700123456"]
+      responses:
+        "200":
+          description: Order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
 components:
+  parameters:
+    Lang:
+      name: lang
+      in: query
+      description: Response language
+      schema:
+        $ref: "#/components/schemas/Lang"
+
+  responses:
+    BadRequest:
+      description: Malformed request or invalid fields (code validation_error)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: Out of stock (see items) or Idempotency-Key reused for another order
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unprocessable:
+      description: Business rule rejected the request (promo code, delivery zone)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    TooManyRequests:
+      description: Rate limit exceeded; see the Retry-After header
+      headers:
+        Retry-After:
+          description: Seconds until the next attempt is allowed
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
   schemas:
     Health:
       type: object
@@ -38,3 +278,587 @@ components:
         status:
           type: string
           enum: [ok]
+
+    Lang:
+      type: string
+      enum: [ru, ky]
+      default: ru
+
+    Money:
+      description: Amount in KGS (som)
+      type: integer
+      format: int32
+
+    ErrorCode:
+      type: string
+      enum:
+        - validation_error
+        - not_found
+        - method_not_allowed
+        - category_not_found
+        - product_not_found
+        - order_not_found
+        - out_of_stock
+        - delivery_zone_unavailable
+        - promo_not_found
+        - promo_inactive
+        - promo_not_started
+        - promo_expired
+        - promo_exhausted
+        - promo_min_total
+        - idempotency_conflict
+        - rate_limited
+        - internal_error
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          $ref: "#/components/schemas/ErrorCode"
+        message:
+          description: Developer-facing description; not meant for display
+          type: string
+        fields:
+          description: Invalid request fields (validation_error)
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldError"
+        items:
+          description: Cart lines that cannot be fulfilled (out_of_stock)
+          type: array
+          items:
+            $ref: "#/components/schemas/StockIssue"
+        min_total:
+          description: Required cart subtotal (promo_min_total)
+          $ref: "#/components/schemas/Money"
+
+    FieldError:
+      type: object
+      required: [field, code]
+      properties:
+        field:
+          description: JSON path of the field, e.g. items[0].qty
+          type: string
+        code:
+          type: string
+          enum: [required, invalid, too_long, too_many]
+
+    StockIssue:
+      type: object
+      required: [variant_id, available]
+      properties:
+        variant_id:
+          type: integer
+          format: int64
+        available:
+          description: Units that can still be ordered (0 if sold out or unavailable)
+          type: integer
+          format: int32
+
+    Category:
+      type: object
+      required: [id, slug, name]
+      properties:
+        id:
+          type: integer
+          format: int64
+        slug:
+          type: string
+        name:
+          type: string
+
+    CategoryList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Category"
+
+    Color:
+      type: object
+      required: [id, name, hex]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        hex:
+          type: string
+          examples: ["#0A0A0A"]
+
+    ImageSource:
+      type: object
+      required: [src, srcset]
+      properties:
+        src:
+          description: Signed imgproxy URL at the default width (AVIF/WebP by Accept header)
+          type: string
+        srcset:
+          description: Ready-to-use srcset value with width descriptors
+          type: string
+
+    Image:
+      description: Product photo, 4:5, in thumb/card/full presets
+      type: object
+      required: [alt, thumb, card, full]
+      properties:
+        color_id:
+          description: Color the photo belongs to; absent = shown for every color
+          type: integer
+          format: int64
+        alt:
+          type: string
+        thumb:
+          $ref: "#/components/schemas/ImageSource"
+        card:
+          $ref: "#/components/schemas/ImageSource"
+        full:
+          $ref: "#/components/schemas/ImageSource"
+
+    ProductSort:
+      type: string
+      enum: [featured, new, price_asc, price_desc]
+      default: featured
+
+    ProductCard:
+      type: object
+      required: [id, slug, title, category_slug, price, is_new, in_stock, sizes, colors, images]
+      properties:
+        id:
+          type: integer
+          format: int64
+        slug:
+          type: string
+        title:
+          type: string
+        category_slug:
+          type: string
+        price:
+          $ref: "#/components/schemas/Money"
+        old_price:
+          description: Pre-sale price; present only when the product is on sale
+          $ref: "#/components/schemas/Money"
+        is_new:
+          type: boolean
+        in_stock:
+          type: boolean
+        sizes:
+          description: Sizes in stock, in size order
+          type: array
+          items:
+            type: string
+        colors:
+          description: Colors in stock
+          type: array
+          items:
+            $ref: "#/components/schemas/Color"
+        images:
+          description: Up to two photos (main and hover)
+          type: array
+          items:
+            $ref: "#/components/schemas/Image"
+
+    ProductList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductCard"
+
+    Variant:
+      type: object
+      required: [id, color_id, size, sku, stock]
+      properties:
+        id:
+          type: integer
+          format: int64
+        color_id:
+          type: integer
+          format: int64
+        size:
+          type: string
+        sku:
+          type: string
+        stock:
+          type: integer
+          format: int32
+
+    SizeChartColumn:
+      type: object
+      required: [key, name]
+      properties:
+        key:
+          type: string
+        name:
+          type: string
+
+    SizeChartRow:
+      type: object
+      required: [size, values]
+      properties:
+        size:
+          type: string
+        values:
+          description: Measurement ranges keyed by column key
+          type: object
+          additionalProperties:
+            type: string
+
+    SizeFitRule:
+      type: object
+      required: [size, height_min, height_max, weight_min, weight_max]
+      properties:
+        size:
+          type: string
+        height_min:
+          type: integer
+        height_max:
+          type: integer
+        weight_min:
+          type: integer
+        weight_max:
+          type: integer
+
+    SizeChart:
+      type: object
+      required: [unit, columns, rows, fit]
+      properties:
+        unit:
+          type: string
+          examples: [cm]
+        columns:
+          type: array
+          items:
+            $ref: "#/components/schemas/SizeChartColumn"
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/SizeChartRow"
+        fit:
+          description: Size recommendation by height (cm) and weight (kg)
+          type: array
+          items:
+            $ref: "#/components/schemas/SizeFitRule"
+
+    Product:
+      type: object
+      required:
+        [id, slug, title, description, composition, care, price, is_new, category, colors, sizes, variants, images]
+      properties:
+        id:
+          type: integer
+          format: int64
+        slug:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        composition:
+          type: string
+        care:
+          type: string
+        price:
+          $ref: "#/components/schemas/Money"
+        old_price:
+          $ref: "#/components/schemas/Money"
+        is_new:
+          type: boolean
+        category:
+          $ref: "#/components/schemas/Category"
+        colors:
+          description: All colors of active variants (including sold out)
+          type: array
+          items:
+            $ref: "#/components/schemas/Color"
+        sizes:
+          description: All sizes of active variants, in size order
+          type: array
+          items:
+            type: string
+        variants:
+          type: array
+          items:
+            $ref: "#/components/schemas/Variant"
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/Image"
+        size_chart:
+          $ref: "#/components/schemas/SizeChart"
+
+    Contacts:
+      type: object
+      required: [phones, whatsapp, telegram, instagram]
+      properties:
+        phones:
+          type: array
+          items:
+            type: string
+        whatsapp:
+          type: string
+        telegram:
+          type: string
+        instagram:
+          type: string
+
+    Pickup:
+      type: object
+      required: [address, hours]
+      properties:
+        address:
+          type: string
+        hours:
+          type: string
+        map_url:
+          type: string
+
+    Hero:
+      type: object
+      required: [title, subtitle]
+      properties:
+        title:
+          type: string
+        subtitle:
+          type: string
+
+    DeliveryZone:
+      type: object
+      required: [id, name, price]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        price:
+          $ref: "#/components/schemas/Money"
+        free_from:
+          description: Delivery is free when the subtotal after discount reaches this amount
+          $ref: "#/components/schemas/Money"
+
+    PublicSettings:
+      type: object
+      required: [contacts, pickup, hero, delivery_zones]
+      properties:
+        contacts:
+          $ref: "#/components/schemas/Contacts"
+        pickup:
+          $ref: "#/components/schemas/Pickup"
+        hero:
+          $ref: "#/components/schemas/Hero"
+        delivery_zones:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeliveryZone"
+
+    PromoType:
+      type: string
+      enum: [percent, fixed]
+
+    PromoValidateRequest:
+      type: object
+      required: [code, subtotal]
+      properties:
+        code:
+          type: string
+          maxLength: 32
+        subtotal:
+          $ref: "#/components/schemas/Money"
+
+    PromoValidation:
+      type: object
+      required: [code, type, value, discount]
+      properties:
+        code:
+          type: string
+        type:
+          $ref: "#/components/schemas/PromoType"
+        value:
+          description: Percent or KGS, depending on type
+          type: integer
+          format: int32
+        discount:
+          $ref: "#/components/schemas/Money"
+
+    DeliveryMethod:
+      type: string
+      enum: [courier, pickup]
+
+    PaymentMethod:
+      type: string
+      enum: [cash, transfer]
+
+    OrderStatus:
+      type: string
+      enum: [new, confirmed, assembling, shipped, ready_for_pickup, completed, cancelled]
+
+    PaymentStatus:
+      type: string
+      enum: [unpaid, paid]
+
+    OrderItemInput:
+      type: object
+      required: [variant_id, qty]
+      properties:
+        variant_id:
+          type: integer
+          format: int64
+        qty:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 99
+
+    Attribution:
+      description: First-visit marketing parameters (UTM, Meta and TikTok click ids)
+      type: object
+      properties:
+        utm_source:
+          type: string
+        utm_medium:
+          type: string
+        utm_campaign:
+          type: string
+        utm_content:
+          type: string
+        fbp:
+          type: string
+        fbc:
+          type: string
+        ttclid:
+          type: string
+
+    CreateOrderRequest:
+      type: object
+      required: [customer_name, phone, delivery_method, payment_method, items]
+      properties:
+        customer_name:
+          type: string
+          maxLength: 100
+        phone:
+          description: Kyrgyz number; normalized to +996XXXXXXXXX
+          type: string
+          examples: ["+996700123456"]
+        delivery_method:
+          $ref: "#/components/schemas/DeliveryMethod"
+        delivery_zone_id:
+          description: Required for courier delivery
+          type: integer
+          format: int64
+        address:
+          description: Required for courier delivery
+          type: string
+          maxLength: 300
+        payment_method:
+          $ref: "#/components/schemas/PaymentMethod"
+        comment:
+          type: string
+          maxLength: 1000
+        promo_code:
+          type: string
+          maxLength: 32
+        items:
+          type: array
+          minItems: 1
+          maxItems: 30
+          items:
+            $ref: "#/components/schemas/OrderItemInput"
+        attribution:
+          $ref: "#/components/schemas/Attribution"
+        website:
+          description: Honeypot. Must be absent or empty; hide the field from humans.
+          type: string
+
+    OrderItem:
+      type: object
+      required: [title, color_name, size, sku, price, qty, line_total]
+      properties:
+        variant_id:
+          description: Absent if the variant was deleted from the catalog
+          type: integer
+          format: int64
+        product_slug:
+          description: Absent if the product was deleted from the catalog
+          type: string
+        title:
+          type: string
+        color_name:
+          type: string
+        size:
+          type: string
+        sku:
+          type: string
+        price:
+          $ref: "#/components/schemas/Money"
+        qty:
+          type: integer
+          format: int32
+        line_total:
+          $ref: "#/components/schemas/Money"
+
+    Order:
+      type: object
+      required:
+        - number
+        - status
+        - payment_status
+        - payment_method
+        - delivery_method
+        - customer_name
+        - phone
+        - comment
+        - items
+        - subtotal
+        - discount
+        - delivery_price
+        - total
+        - created_at
+      properties:
+        number:
+          type: string
+          examples: [ZH-000123]
+        status:
+          $ref: "#/components/schemas/OrderStatus"
+        payment_status:
+          $ref: "#/components/schemas/PaymentStatus"
+        payment_method:
+          $ref: "#/components/schemas/PaymentMethod"
+        delivery_method:
+          $ref: "#/components/schemas/DeliveryMethod"
+        delivery_zone:
+          $ref: "#/components/schemas/DeliveryZone"
+        address:
+          type: string
+        pickup:
+          description: Pickup point (pickup orders only)
+          $ref: "#/components/schemas/Pickup"
+        customer_name:
+          type: string
+        phone:
+          type: string
+        comment:
+          type: string
+        promo_code:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        subtotal:
+          $ref: "#/components/schemas/Money"
+        discount:
+          $ref: "#/components/schemas/Money"
+        delivery_price:
+          $ref: "#/components/schemas/Money"
+        total:
+          $ref: "#/components/schemas/Money"
+        created_at:
+          type: string
+          format: date-time

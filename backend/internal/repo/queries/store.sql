@@ -23,6 +23,10 @@ RETURNING *;
 SELECT * FROM promo_codes
 WHERE code = sqlc.arg('code')::citext;
 
+-- name: GetPromoCodeByID :one
+SELECT * FROM promo_codes
+WHERE id = $1;
+
 -- name: CreatePromoCode :one
 INSERT INTO promo_codes (code, type, value, min_total, max_uses, valid_from, valid_to, is_active)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)

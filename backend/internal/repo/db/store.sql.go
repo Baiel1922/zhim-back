@@ -125,6 +125,31 @@ func (q *Queries) GetPromoCodeByCode(ctx context.Context, code string) (PromoCod
 	return i, err
 }
 
+const getPromoCodeByID = `-- name: GetPromoCodeByID :one
+SELECT id, code, type, value, min_total, max_uses, used_count, valid_from, valid_to, is_active, created_at, updated_at FROM promo_codes
+WHERE id = $1
+`
+
+func (q *Queries) GetPromoCodeByID(ctx context.Context, id int64) (PromoCode, error) {
+	row := q.db.QueryRow(ctx, getPromoCodeByID, id)
+	var i PromoCode
+	err := row.Scan(
+		&i.ID,
+		&i.Code,
+		&i.Type,
+		&i.Value,
+		&i.MinTotal,
+		&i.MaxUses,
+		&i.UsedCount,
+		&i.ValidFrom,
+		&i.ValidTo,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getSetting = `-- name: GetSetting :one
 SELECT key, value, updated_at FROM settings
 WHERE key = $1

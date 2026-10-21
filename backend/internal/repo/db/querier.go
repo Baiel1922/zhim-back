@@ -17,6 +17,7 @@ type Querier interface {
 	// Affects 0 rows when there is not enough stock.
 	DecrementVariantStock(ctx context.Context, arg DecrementVariantStockParams) (int64, error)
 	GetActiveAdminByTelegramID(ctx context.Context, telegramID int64) (Admin, error)
+	GetActiveProductBySlug(ctx context.Context, slug string) (GetActiveProductBySlugRow, error)
 	GetCategoryBySlug(ctx context.Context, slug string) (Category, error)
 	GetDeliveryZone(ctx context.Context, id int64) (DeliveryZone, error)
 	GetOrderByIdempotencyKey(ctx context.Context, idempotencyKey string) (Order, error)
@@ -27,6 +28,7 @@ type Querier interface {
 	GetProductBySlug(ctx context.Context, slug string) (Product, error)
 	// Case-insensitive (citext).
 	GetPromoCodeByCode(ctx context.Context, code string) (PromoCode, error)
+	GetPromoCodeByID(ctx context.Context, id int64) (PromoCode, error)
 	GetSetting(ctx context.Context, key string) (Setting, error)
 	GetSizeChart(ctx context.Context, id int64) (SizeChart, error)
 	// Affects 0 rows when the code has reached max_uses.
@@ -42,7 +44,9 @@ type Querier interface {
 	ListOrderItems(ctx context.Context, orderID int64) ([]OrderItem, error)
 	ListOrderStatusHistory(ctx context.Context, orderID int64) ([]OrderStatusHistory, error)
 	ListProductImages(ctx context.Context, productID int64) ([]ProductImage, error)
+	ListProductSlugs(ctx context.Context, ids []int64) ([]ListProductSlugsRow, error)
 	ListSettings(ctx context.Context, keys []string) ([]Setting, error)
+	// Size order first, so distinct sizes come out ranked when scanning rows.
 	ListVariantsByProduct(ctx context.Context, productID int64) ([]ListVariantsByProductRow, error)
 	// Row-locks the variants of an order being created. Locks are taken in id order
 	// so concurrent checkouts with overlapping items cannot deadlock.
