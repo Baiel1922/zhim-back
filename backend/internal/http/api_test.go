@@ -224,7 +224,7 @@ func TestCheckoutFlow(t *testing.T) {
 	t.Parallel()
 	a := newAPI(t, 0)
 	var core, soldOut int64
-	for sku, id := range map[string]*int64{"ZH-TFC-BLK-M": &core, "ZH-TFP-GRF-XXL": &soldOut} {
+	for sku, id := range map[string]*int64{"ZH-TFC-BLK-M": &core, "ZH-TFP-RED-XXL": &soldOut} {
 		rows, err := a.store.ListVariantsByProduct(t.Context(), mustProductID(t, a.store, sku))
 		if err != nil {
 			t.Fatal(err)
@@ -305,7 +305,7 @@ func TestCheckoutRateLimit(t *testing.T) {
 
 func mustProductID(t *testing.T, store *repo.Store, sku string) int64 {
 	t.Helper()
-	slug := map[string]string{"ZH-TFC-BLK-M": "termofutbolka-core", "ZH-TFP-GRF-XXL": "termofutbolka-pro-compression"}[sku]
+	slug := map[string]string{"ZH-TFC-BLK-M": "termofutbolka-core", "ZH-TFP-RED-XXL": "termofutbolka-pro-compression"}[sku]
 	p, err := store.GetProductBySlug(t.Context(), slug)
 	if err != nil {
 		t.Fatal(err)

@@ -22,6 +22,10 @@ var colors = []color{
 	{"BLK", "Чёрный", "Кара", "#0A0A0A"},
 	{"WHT", "Белый", "Ак", "#F5F5F5"},
 	{"GRF", "Графит", "Графит", "#3A3A3C"},
+	{"MAU", "Лиловый", "Ачык кызгылт көк", "#7A6577"},
+	{"RED", "Чёрно-красный", "Кара-кызыл", "#B3261E"},
+	{"VIO", "Фиолетовый", "Кызгылт көк", "#3B2667"},
+	{"CAM", "Камуфляж", "Камуфляж", "#6B5B4B"},
 }
 
 var sizes = []string{"S", "M", "L", "XL", "XXL"}
@@ -57,7 +61,7 @@ var products = []product{
 		descriptionRu: "Базовая термофутболка из быстросохнущей ткани. Отводит влагу, не сковывает движений и держит форму после стирок.",
 		descriptionKy: "Тез кургаган кездемеден жасалган негизги термофутболка. Нымды сыртка чыгарат, кыймылга тоскоол болбойт жана жуулгандан кийин формасын сактайт.",
 		price:         1990, isNew: true,
-		colors: [2]string{"BLK", "WHT"},
+		colors: [2]string{"BLK", "MAU"},
 	},
 	{
 		code: "TFP", slug: "termofutbolka-pro-compression", category: "termofutbolki",
@@ -65,8 +69,8 @@ var products = []product{
 		descriptionRu: "Компрессионная посадка для силовых и интервальных тренировок. Плоские швы не натирают.",
 		descriptionKy: "Күч жана интервалдык машыгуулар үчүн компрессиялык тигилиш. Жалпак тигиштер сүрткүлөбөйт.",
 		price:         2490, oldPrice: price(2990),
-		colors:         [2]string{"BLK", "GRF"},
-		stockOverrides: map[string]int32{"GRF-XXL": 0, "BLK-S": 1},
+		colors:         [2]string{"BLK", "RED"},
+		stockOverrides: map[string]int32{"RED-XXL": 0, "BLK-S": 1},
 	},
 	{
 		code: "LST", slug: "longsliv-thermo", category: "longslivy",
@@ -74,7 +78,7 @@ var products = []product{
 		descriptionRu: "Тёплый лонгслив с начёсом для тренировок на улице в холодную погоду.",
 		descriptionKy: "Суук күндөрү сыртта машыгуу үчүн ичи түктүү жылуу лонгслив.",
 		price:         2790, isNew: true,
-		colors:         [2]string{"BLK", "GRF"},
+		colors:         [2]string{"VIO", "BLK"},
 		stockOverrides: map[string]int32{"BLK-XXL": 1},
 	},
 	{
@@ -96,12 +100,12 @@ var products = []product{
 	},
 	{
 		code: "SHR", slug: "shorty-run", category: "shorty",
-		titleRu: "Шорты Run", titleKy: "Run шорту",
-		descriptionRu: "Сверхлёгкие беговые шорты длиной 5 дюймов с сетчатой подкладкой.",
-		descriptionKy: "Ичи тор кездемелүү, узундугу 5 дюйм болгон өтө жеңил чуркоо шорту.",
+		titleRu: "Шорты Run с тайтсами", titleKy: "Тайтсы менен Run шорту",
+		descriptionRu: "Лёгкие беговые шорты со встроенными тайтсами в полную длину: держат мышцы в тонусе и не натирают.",
+		descriptionKy: "Ичине толук узундуктагы тайтсы орнотулган жеңил чуркоо шорту: булчуңдарды тонуста кармайт жана сүрткүлөбөйт.",
 		price:         1890, oldPrice: price(2290),
-		colors:         [2]string{"BLK", "WHT"},
-		stockOverrides: map[string]int32{"WHT-L": 1},
+		colors:         [2]string{"BLK", "CAM"},
+		stockOverrides: map[string]int32{"CAM-L": 1},
 	},
 }
 

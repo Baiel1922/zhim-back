@@ -30,7 +30,7 @@ func TestSeedIsIdempotent(t *testing.T) {
 	}
 
 	counts := map[string]int{
-		"categories": 3, "colors": 3, "products": 6, "product_variants": 60,
+		"categories": 3, "colors": 7, "products": 6, "product_variants": 60,
 		"size_charts": 1, "delivery_zones": 2, "settings": 3, "admins": 1,
 	}
 	for table, want := range counts {

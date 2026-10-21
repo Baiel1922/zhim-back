@@ -197,7 +197,7 @@ func TestCreateOrderOutOfStockRollsBack(t *testing.T) {
 	e := newEnv(t)
 	core, _ := e.variant("ZH-TFC-BLK-M")      // 9
 	pro, _ := e.variant("ZH-TFP-BLK-S")       // 1
-	soldOut, _ := e.variant("ZH-TFP-GRF-XXL") // 0
+	soldOut, _ := e.variant("ZH-TFP-RED-XXL") // 0
 
 	_, err := e.checkout.CreateOrder(e.ctx, pickupInput("key-oos-00001",
 		service.ItemInput{VariantID: core, Qty: 1},
