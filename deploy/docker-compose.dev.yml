@@ -109,6 +109,7 @@ services:
       API_INTERNAL_URL: http://backend:8080
       NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL}
       NEXT_PUBLIC_SITE_URL: ${WEB_URL}
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET}
     ports:
       - "${WEB_PORT:-3000}:3000"
     volumes:
