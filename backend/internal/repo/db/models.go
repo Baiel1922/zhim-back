@@ -517,6 +517,13 @@ type OrderItem struct {
 	Qty         int32
 }
 
+type OrderNotification struct {
+	OrderID   int64
+	ChatID    int64
+	MessageID int64
+	CreatedAt time.Time
+}
+
 type OrderStatusHistory struct {
 	ID         int64
 	OrderID    int64

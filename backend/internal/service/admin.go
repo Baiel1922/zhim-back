@@ -46,6 +46,7 @@ type Admin struct {
 	store   *repo.Store
 	objects ObjectStore
 	notify  Revalidator
+	events  OrderEvents
 	loc     *time.Location
 	log     *slog.Logger
 	now     func() time.Time
@@ -54,7 +55,7 @@ type Admin struct {
 // NewAdmin creates the back-office service. loc is the business timezone for
 // date filters and the dashboard.
 func NewAdmin(store *repo.Store, objects ObjectStore, notify Revalidator, loc *time.Location, log *slog.Logger) *Admin {
-	return &Admin{store: store, objects: objects, notify: notifierOrNoop(notify), loc: loc, log: log, now: time.Now}
+	return &Admin{store: store, objects: objects, notify: notifierOrNoop(notify), events: noopOrderEvents{}, loc: loc, log: log, now: time.Now}
 }
 
 // lookupErr maps "no rows" to a not_found error for what.

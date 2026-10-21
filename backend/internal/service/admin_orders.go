@@ -176,6 +176,7 @@ func (a *Admin) SetOrderStatus(ctx context.Context, adminID *int64, orderID int6
 	if len(touched) > 0 {
 		a.notify.Notify(productTags(touched)...)
 	}
+	a.events.OrderUpdated(orderID)
 	return a.adminOrder(ctx, order)
 }
 
@@ -224,6 +225,7 @@ func (a *Admin) SetOrderPayment(ctx context.Context, orderID int64, status db.Pa
 	if err != nil {
 		return nil, lookupErr(err, "order")
 	}
+	a.events.OrderUpdated(orderID)
 	return a.adminOrder(ctx, order)
 }
 

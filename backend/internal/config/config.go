@@ -21,12 +21,24 @@ type Config struct {
 	Imgproxy           Imgproxy  `envPrefix:"IMGPROXY_"`
 	RateLimit          RateLimit `envPrefix:"RATE_LIMIT_"`
 	JWT                JWT       `envPrefix:"JWT_"`
-	TelegramBotToken   string    `env:"TELEGRAM_BOT_TOKEN,required,notEmpty"`
+	Telegram           Telegram  `envPrefix:"TELEGRAM_"`
+	// Public URLs: the admin Mini App (bot buttons need HTTPS) and the storefront.
+	AdminURL string `env:"ADMIN_URL"`
+	WebURL   string `env:"WEB_URL"`
 	// Business timezone for date filters, the dashboard and reports.
 	Timezone string `env:"APP_TIMEZONE" envDefault:"Asia/Bishkek"`
 	// Storefront base URL reachable from the API (on-demand revalidation); empty disables it.
 	WebInternalURL   string `env:"WEB_INTERNAL_URL"`
 	RevalidateSecret string `env:"REVALIDATE_SECRET"`
+}
+
+// Telegram holds bot settings. The token also validates Mini App sign-ins.
+type Telegram struct {
+	BotToken string `env:"BOT_TOKEN,required,notEmpty"`
+	// Only one process may long-poll a bot; disable it for extra local instances.
+	BotEnabled bool `env:"BOT_ENABLED" envDefault:"true"`
+	// Daily summary time (HH:MM, business timezone).
+	DailyReportTime string `env:"DAILY_REPORT_TIME" envDefault:"21:00"`
 }
 
 // JWT holds admin token settings.

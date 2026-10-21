@@ -30,12 +30,13 @@ const (
 type Checkout struct {
 	store  *repo.Store
 	notify Revalidator
+	events OrderEvents
 	now    func() time.Time
 }
 
 // NewCheckout creates a Checkout. notify (may be nil) learns about stock changes.
 func NewCheckout(store *repo.Store, notify Revalidator) *Checkout {
-	return &Checkout{store: store, notify: notifierOrNoop(notify), now: time.Now}
+	return &Checkout{store: store, notify: notifierOrNoop(notify), events: noopOrderEvents{}, now: time.Now}
 }
 
 // PromoResult is a promo code that applies to a subtotal.
@@ -148,6 +149,7 @@ func (c *Checkout) CreateOrder(ctx context.Context, in OrderInput) (*OrderDetail
 	}
 	// Stock changed: refresh availability on the storefront.
 	c.notify.Notify(productTags(d.ProductSlugs)...)
+	c.events.OrderCreated(order.ID)
 	return d, nil
 }
 

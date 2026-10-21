@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -13,6 +14,7 @@ import (
 	_ "time/tzdata" // the distroless/alpine images have no zoneinfo
 
 	"github.com/Baiel1922/zhim-back/backend/internal/auth"
+	"github.com/Baiel1922/zhim-back/backend/internal/bot"
 	"github.com/Baiel1922/zhim-back/backend/internal/config"
 	apihttp "github.com/Baiel1922/zhim-back/backend/internal/http"
 	"github.com/Baiel1922/zhim-back/backend/internal/imgproxy"
@@ -71,12 +73,37 @@ func run() error {
 	}
 	go notifier.Run(ctx)
 
+	checkout := service.NewCheckout(store, notifier)
+	admin := service.NewAdmin(store, objects, notifier, loc, log)
+	if cfg.Telegram.BotEnabled {
+		reportAt, err := time.Parse("15:04", cfg.Telegram.DailyReportTime)
+		if err != nil {
+			return fmt.Errorf("TELEGRAM_DAILY_REPORT_TIME: %w", err)
+		}
+		tg, err := bot.New(bot.Config{
+			Token:        cfg.Telegram.BotToken,
+			AdminURL:     cfg.AdminURL,
+			WebURL:       cfg.WebURL,
+			Location:     loc,
+			ReportHour:   reportAt.Hour(),
+			ReportMinute: reportAt.Minute(),
+		}, store, admin, log)
+		if err != nil {
+			return err
+		}
+		checkout.SetOrderEvents(tg)
+		admin.SetOrderEvents(tg)
+		go tg.Run(ctx)
+	} else {
+		log.Warn("TELEGRAM_BOT_ENABLED=false: no order notifications from this process")
+	}
+
 	router := apihttp.NewRouter(apihttp.Deps{
 		Log:               log,
 		Catalog:           service.NewCatalog(store),
-		Checkout:          service.NewCheckout(store, notifier),
-		Admin:             service.NewAdmin(store, objects, notifier, loc, log),
-		AdminAuth:         service.NewAdminAuth(store, tokens, cfg.TelegramBotToken),
+		Checkout:          checkout,
+		Admin:             admin,
+		AdminAuth:         service.NewAdminAuth(store, tokens, cfg.Telegram.BotToken),
 		Images:            images,
 		CORSOrigins:       cfg.CORSAllowedOrigins,
 		TrustedProxyCIDRs: cfg.HTTP.TrustedProxyCIDRs,

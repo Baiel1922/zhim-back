@@ -70,6 +70,7 @@ type Querier interface {
 	IncrementVariantStock(ctx context.Context, arg IncrementVariantStockParams) error
 	ListActiveAdmins(ctx context.Context) ([]Admin, error)
 	ListActiveDeliveryZones(ctx context.Context) ([]DeliveryZone, error)
+	ListActiveOwners(ctx context.Context) ([]Admin, error)
 	// Storefront catalog. Sizes and colors include only active variants in stock;
 	// preview_s3_keys holds the first two images (main + hover).
 	ListActiveProducts(ctx context.Context, arg ListActiveProductsParams) ([]ListActiveProductsRow, error)
@@ -79,6 +80,7 @@ type Querier interface {
 	ListLowStockVariants(ctx context.Context, threshold int32) ([]ListLowStockVariantsRow, error)
 	ListOrderHistoryWithAdmins(ctx context.Context, orderID int64) ([]ListOrderHistoryWithAdminsRow, error)
 	ListOrderItems(ctx context.Context, orderID int64) ([]OrderItem, error)
+	ListOrderNotifications(ctx context.Context, orderID int64) ([]OrderNotification, error)
 	ListOrderStatusHistory(ctx context.Context, orderID int64) ([]OrderStatusHistory, error)
 	ListProductImages(ctx context.Context, productID int64) ([]ProductImage, error)
 	ListProductSlugs(ctx context.Context, ids []int64) ([]ListProductSlugsRow, error)
@@ -95,6 +97,7 @@ type Querier interface {
 	NextProductImageSort(ctx context.Context, productID int64) (int32, error)
 	// Cancelled orders do not count.
 	OrderStatsSince(ctx context.Context, createdAt time.Time) (OrderStatsSinceRow, error)
+	SaveOrderNotification(ctx context.Context, arg SaveOrderNotificationParams) error
 	SetProductImageSort(ctx context.Context, arg SetProductImageSortParams) (int64, error)
 	SetVariantStock(ctx context.Context, arg SetVariantStockParams) (ProductVariant, error)
 	TopProductsSince(ctx context.Context, arg TopProductsSinceParams) ([]TopProductsSinceRow, error)
