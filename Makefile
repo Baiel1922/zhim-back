@@ -7,6 +7,10 @@ export FRONT_DIR := $(abspath $(FRONT_DIR))
 COMPOSE := docker compose --env-file .env -f deploy/docker-compose.dev.yml
 GOLANGCI_LINT_VERSION := v2.15.0
 GOLANGCI_LINT := go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+SQLC_VERSION := 1.31.1
+SQLC := docker run --rm -v "$(CURDIR)/backend:/src" -w /src -u "$$(id -u):$$(id -g)" sqlc/sqlc:$(SQLC_VERSION)
+# Host-side commands (migrate, seed) read .env; DATABASE_URL there points at localhost.
+WITH_ENV := set -a && . ./.env && set +a &&
 
 .DEFAULT_GOAL := help
 
@@ -42,24 +46,35 @@ ps: ## List running services
 
 # ---------- Database ----------
 
+# Postgres must be running (`make up`).
+
 .PHONY: migrate
-migrate: ## Apply DB migrations (step 1)
-	@echo "TODO(step 1): goose migrations"
+migrate: .env ## Apply all pending DB migrations
+	$(WITH_ENV) cd backend && go run ./cmd/migrate up
+
+.PHONY: migrate-down
+migrate-down: .env ## Roll back the last migration
+	$(WITH_ENV) cd backend && go run ./cmd/migrate down
+
+.PHONY: migrate-status
+migrate-status: .env ## Show applied and pending migrations
+	$(WITH_ENV) cd backend && go run ./cmd/migrate status
 
 .PHONY: migrate-new
-migrate-new: ## Create a new migration: make migrate-new name=add_products (step 1)
+migrate-new: ## Create a new migration: make migrate-new name=add_products
 	@test -n "$(name)" || { echo "usage: make migrate-new name=<migration_name>"; exit 1; }
-	@echo "TODO(step 1): goose create $(name) sql"
+	cd backend && go run ./cmd/migrate create $(name)
 
 .PHONY: seed
-seed: ## Load test data (step 1)
-	@echo "TODO(step 1): seed products, variants, delivery zones, settings"
+seed: .env ## Load test data (idempotent; resets seeded rows to seed values)
+	$(WITH_ENV) cd backend && go run ./cmd/seed
 
 # ---------- Codegen ----------
 
 .PHONY: gen
 gen: ## Generate sqlc + oapi-codegen + TS clients
-	@echo "==> sqlc: TODO(step 1)"
+	@echo "==> sqlc"
+	$(SQLC) generate
 	@echo "==> oapi-codegen"
 	cd backend && go tool oapi-codegen -config oapi-codegen.yaml ../api/openapi.yaml
 	@if [ -d "$(FRONT_DIR)" ]; then \
@@ -72,8 +87,12 @@ gen: ## Generate sqlc + oapi-codegen + TS clients
 # ---------- Quality ----------
 
 .PHONY: test
-test: ## Run Go tests
+test: ## Run Go tests, including repository tests on testcontainers (needs Docker)
 	cd backend && go test -race ./...
+
+.PHONY: test-unit
+test-unit: ## Run Go tests without Docker (skips integration tests)
+	cd backend && go test -race -short ./...
 
 .PHONY: lint
 lint: ## golangci-lint + frontend lint (if zhim-front is present)

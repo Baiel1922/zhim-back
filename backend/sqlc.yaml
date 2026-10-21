@@ -1,0 +1,31 @@
+# Run via `make gen` (sqlc/sqlc Docker image, version pinned in the Makefile).
+version: "2"
+sql:
+  - engine: postgresql
+    schema: migrations
+    queries: internal/repo/queries
+    strict_order_by: false
+    gen:
+      go:
+        package: db
+        out: internal/repo/db
+        sql_package: pgx/v5
+        emit_interface: true
+        emit_pointers_for_null_types: true
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+        emit_empty_slices: true
+        rename:
+          available_color_ids: AvailableColorIDs
+        overrides:
+          - db_type: timestamptz
+            go_type: time.Time
+          - db_type: timestamptz
+            nullable: true
+            go_type:
+              type: time.Time
+              pointer: true
+          - db_type: jsonb
+            go_type: encoding/json.RawMessage
+          - db_type: citext
+            go_type: string
