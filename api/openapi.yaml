@@ -2104,6 +2104,10 @@ components:
           description: Required for courier delivery
           type: string
           maxLength: 300
+        landmark:
+          description: Optional hint for the courier (courier delivery only)
+          type: string
+          maxLength: 200
         payment_method:
           $ref: "#/components/schemas/PaymentMethod"
         comment:
@@ -2183,6 +2187,8 @@ components:
         delivery_zone:
           $ref: "#/components/schemas/DeliveryZone"
         address:
+          type: string
+        landmark:
           type: string
         pickup:
           description: Pickup point (pickup orders only)
@@ -3039,6 +3045,8 @@ components:
         delivery_zone:
           $ref: "#/components/schemas/DeliveryZone"
         address:
+          type: string
+        landmark:
           type: string
         customer_name:
           type: string

@@ -182,6 +182,7 @@ func (p presenter) order(d *service.OrderDetails) oapi.Order {
 		PaymentMethod:  oapi.PaymentMethod(o.PaymentMethod),
 		DeliveryMethod: oapi.DeliveryMethod(o.DeliveryMethod),
 		Address:        o.Address,
+		Landmark:       o.Landmark,
 		CustomerName:   o.CustomerName,
 		Phone:          o.Phone,
 		Comment:        o.Comment,

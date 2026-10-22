@@ -500,6 +500,7 @@ type Order struct {
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 	InternalComment string
+	Landmark        *string
 }
 
 type OrderItem struct {

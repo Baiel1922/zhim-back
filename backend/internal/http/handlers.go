@@ -145,6 +145,7 @@ func (h *Handlers) CreateOrder(ctx context.Context, req oapi.CreateOrderRequestO
 		DeliveryMethod: db.DeliveryMethod(b.DeliveryMethod),
 		DeliveryZoneID: b.DeliveryZoneID,
 		Address:        deref(b.Address),
+		Landmark:       deref(b.Landmark),
 		PaymentMethod:  db.PaymentMethod(b.PaymentMethod),
 		Comment:        deref(b.Comment),
 		PromoCode:      deref(b.PromoCode),

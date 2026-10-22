@@ -1,16 +1,16 @@
 -- name: CreateOrder :one
 INSERT INTO orders (
     payment_method, customer_name, phone, comment,
-    delivery_method, delivery_zone_id, address,
+    delivery_method, delivery_zone_id, address, landmark,
     subtotal, delivery_price, discount, total, promo_code_id, lang,
     utm_source, utm_medium, utm_campaign, utm_content, fbp, fbc, ttclid,
     idempotency_key
 ) VALUES (
     $1, $2, $3, $4,
-    $5, $6, $7,
-    $8, $9, $10, $11, $12, $13,
-    $14, $15, $16, $17, $18, $19, $20,
-    $21
+    $5, $6, $7, $8,
+    $9, $10, $11, $12, $13, $14,
+    $15, $16, $17, $18, $19, $20, $21,
+    $22
 )
 RETURNING *;
 

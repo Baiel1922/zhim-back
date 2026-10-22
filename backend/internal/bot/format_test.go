@@ -42,7 +42,7 @@ func TestOrderCard(t *testing.T) {
 				ID: 7, Number: "ZH-000123", Status: db.OrderStatusConfirmed, PaymentMethod: db.PaymentMethodTransfer,
 				PaymentStatus: db.PaymentStatusUnpaid, DeliveryMethod: db.DeliveryMethodCourier,
 				CustomerName: "Азамат <b>", Phone: "+996700123456", Comment: "позвонить & ждать",
-				Address: ptr("ул. Токтогула, 1"), Subtotal: 6470, Discount: 398, DeliveryPrice: 200, Total: 6272, CreatedAt: created,
+				Address: ptr("ул. Токтогула, 1"), Landmark: ptr("вход со двора & налево"), Subtotal: 6470, Discount: 398, DeliveryPrice: 200, Total: 6272, CreatedAt: created,
 			},
 			Items: []db.OrderItem{
 				{TitleRu: "Термофутболка Core", ColorNameRu: "Чёрный", Size: "M", Price: 1990, Qty: 2},
@@ -66,7 +66,7 @@ func TestOrderCard(t *testing.T) {
 		"Доставка: 200\u00a0сом",
 		"<b>Итого: 6\u00a0272\u00a0сом</b>",
 		"Оплата: переводом при получении · не оплачен",
-		"Курьер · Бишкек\nул. Токтогула, 1",
+		"Курьер · Бишкек\nул. Токтогула, 1\nОриентир: вход со двора &amp; налево",
 		"Азамат &lt;b&gt;\n+996700123456",
 		"Комментарий: позвонить &amp; ждать",
 		"Изменено: Айгерим · 21.10 14:07",

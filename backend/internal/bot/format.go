@@ -92,6 +92,9 @@ func orderCard(o *service.AdminOrder, loc *time.Location) string {
 		if ord.Address != nil {
 			fmt.Fprintf(&b, "%s\n", esc(*ord.Address))
 		}
+		if ord.Landmark != nil {
+			fmt.Fprintf(&b, "Ориентир: %s\n", esc(*ord.Landmark))
+		}
 	} else {
 		b.WriteString("Самовывоз\n")
 	}

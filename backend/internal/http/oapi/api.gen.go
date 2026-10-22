@@ -469,6 +469,7 @@ type AdminOrder struct {
 	ID              int64               `json:"id"`
 	InternalComment string              `json:"internal_comment"`
 	Items           []OrderItem         `json:"items"`
+	Landmark        *string             `json:"landmark,omitempty"`
 	Lang            Lang                `json:"lang"`
 	Number          string              `json:"number"`
 	PaymentMethod   PaymentMethod       `json:"payment_method"`
@@ -760,7 +761,10 @@ type CreateOrderRequest struct {
 	// DeliveryZoneID Required for courier delivery
 	DeliveryZoneID *int64           `json:"delivery_zone_id,omitempty"`
 	Items          []OrderItemInput `json:"items"`
-	PaymentMethod  PaymentMethod    `json:"payment_method"`
+
+	// Landmark Optional hint for the courier (courier delivery only)
+	Landmark      *string       `json:"landmark,omitempty"`
+	PaymentMethod PaymentMethod `json:"payment_method"`
 
 	// Phone Kyrgyz number; normalized to +996XXXXXXXXX
 	//
@@ -918,6 +922,7 @@ type Order struct {
 	// Discount Amount in KGS (som)
 	Discount Money       `json:"discount"`
 	Items    []OrderItem `json:"items"`
+	Landmark *string     `json:"landmark,omitempty"`
 
 	// Number Examples: ZH-000123
 	Number        string        `json:"number"`

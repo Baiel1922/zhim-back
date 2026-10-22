@@ -17,6 +17,7 @@ import (
 const (
 	maxNameLen        = 100
 	maxAddressLen     = 300
+	maxLandmarkLen    = 200
 	maxCommentLen     = 1000
 	maxPromoLen       = 32
 	maxAttributionLen = 255
@@ -85,6 +86,7 @@ type OrderInput struct {
 	DeliveryMethod db.DeliveryMethod
 	DeliveryZoneID *int64
 	Address        string
+	Landmark       string
 	PaymentMethod  db.PaymentMethod
 	Comment        string
 	PromoCode      string
@@ -235,6 +237,7 @@ func (c *Checkout) placeOrder(ctx context.Context, q *db.Queries, in OrderInput,
 	if zone != nil {
 		params.DeliveryZoneID = &zone.ID
 		params.Address = &in.Address
+		params.Landmark = optional(in.Landmark)
 	}
 	if promo != nil {
 		params.PromoCodeID = &promo.ID
@@ -407,6 +410,7 @@ func normalizeOrder(in OrderInput) (OrderInput, []ItemInput, error) {
 	}
 
 	in.Address = strings.TrimSpace(in.Address)
+	in.Landmark = strings.TrimSpace(in.Landmark)
 	switch in.DeliveryMethod {
 	case db.DeliveryMethodCourier:
 		if in.DeliveryZoneID == nil {
@@ -418,8 +422,11 @@ func normalizeOrder(in OrderInput) (OrderInput, []ItemInput, error) {
 		case utf8.RuneCountInString(in.Address) > maxAddressLen:
 			add("address", FieldTooLong)
 		}
+		if utf8.RuneCountInString(in.Landmark) > maxLandmarkLen {
+			add("landmark", FieldTooLong)
+		}
 	case db.DeliveryMethodPickup:
-		in.DeliveryZoneID, in.Address = nil, ""
+		in.DeliveryZoneID, in.Address, in.Landmark = nil, "", ""
 	default:
 		add("delivery_method", FieldInvalid)
 	}

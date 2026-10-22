@@ -171,6 +171,7 @@ func (h *Handlers) adminOrderDTO(o *service.AdminOrder) oapi.AdminOrder {
 		DeliveryMethod:  public.DeliveryMethod,
 		DeliveryZone:    public.DeliveryZone,
 		Address:         ord.Address,
+		Landmark:        ord.Landmark,
 		CustomerName:    ord.CustomerName,
 		Phone:           ord.Phone,
 		Comment:         ord.Comment,

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 	"sync"
 	"testing"
 
@@ -121,6 +122,7 @@ func TestCreateOrderPickup(t *testing.T) {
 		service.ItemInput{VariantID: core, Qty: 1}, // duplicate line is merged
 	)
 	in.Attribution = service.Attribution{UtmSource: "instagram", Fbp: "fb.1.123"}
+	in.Landmark = "у аптеки" // dropped: pickup orders have no courier hints
 	d, err := e.checkout.CreateOrder(e.ctx, in)
 	if err != nil {
 		t.Fatal(err)
@@ -148,6 +150,9 @@ func TestCreateOrderPickup(t *testing.T) {
 	if d.Pickup == nil || d.Pickup.AddressRu == "" || d.DeliveryZone != nil {
 		t.Errorf("pickup = %+v, zone = %+v", d.Pickup, d.DeliveryZone)
 	}
+	if o.Address != nil || o.Landmark != nil {
+		t.Errorf("address = %v landmark = %v", o.Address, o.Landmark)
+	}
 
 	if got := e.stock("ZH-TFC-BLK-M"); got != 7 {
 		t.Errorf("core stock = %d, want 7", got)
@@ -170,6 +175,7 @@ func TestCreateOrderCourierWithPromo(t *testing.T) {
 	in.DeliveryMethod = db.DeliveryMethodCourier
 	in.DeliveryZoneID = ptr(e.zone("Бишкек"))
 	in.Address = " ул. Токтогула, 100 "
+	in.Landmark = " вход со двора "
 	in.PromoCode = "welcome10"
 	d, err := e.checkout.CreateOrder(e.ctx, in)
 	if err != nil {
@@ -183,6 +189,9 @@ func TestCreateOrderCourierWithPromo(t *testing.T) {
 	}
 	if o.Address == nil || *o.Address != "ул. Токтогула, 100" || d.DeliveryZone == nil || d.Pickup != nil {
 		t.Errorf("address = %v zone = %+v pickup = %+v", o.Address, d.DeliveryZone, d.Pickup)
+	}
+	if o.Landmark == nil || *o.Landmark != "вход со двора" {
+		t.Errorf("landmark = %v", o.Landmark)
 	}
 	if d.PromoCode != "WELCOME10" {
 		t.Errorf("promo = %q", d.PromoCode)
@@ -238,6 +247,7 @@ func TestCreateOrderValidation(t *testing.T) {
 		CustomerName:   " ",
 		Phone:          "+7 700 123 45 67",
 		DeliveryMethod: db.DeliveryMethodCourier,
+		Landmark:       strings.Repeat("я", 201),
 		PaymentMethod:  "card",
 		Items:          []service.ItemInput{{VariantID: 1, Qty: 0}, {VariantID: -1, Qty: 1}},
 	}
@@ -254,6 +264,7 @@ func TestCreateOrderValidation(t *testing.T) {
 		"payment_method":      service.FieldInvalid,
 		"delivery_zone_id":    service.FieldRequired,
 		"address":             service.FieldRequired,
+		"landmark":            service.FieldTooLong,
 		"items[0].qty":        service.FieldInvalid,
 		"items[1].variant_id": service.FieldInvalid,
 	}

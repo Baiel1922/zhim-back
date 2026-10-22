@@ -12,18 +12,18 @@ import (
 const createOrder = `-- name: CreateOrder :one
 INSERT INTO orders (
     payment_method, customer_name, phone, comment,
-    delivery_method, delivery_zone_id, address,
+    delivery_method, delivery_zone_id, address, landmark,
     subtotal, delivery_price, discount, total, promo_code_id, lang,
     utm_source, utm_medium, utm_campaign, utm_content, fbp, fbc, ttclid,
     idempotency_key
 ) VALUES (
     $1, $2, $3, $4,
-    $5, $6, $7,
-    $8, $9, $10, $11, $12, $13,
-    $14, $15, $16, $17, $18, $19, $20,
-    $21
+    $5, $6, $7, $8,
+    $9, $10, $11, $12, $13, $14,
+    $15, $16, $17, $18, $19, $20, $21,
+    $22
 )
-RETURNING id, number, status, payment_status, payment_method, customer_name, phone, comment, delivery_method, delivery_zone_id, address, subtotal, delivery_price, discount, total, promo_code_id, lang, utm_source, utm_medium, utm_campaign, utm_content, fbp, fbc, ttclid, idempotency_key, created_at, updated_at, internal_comment
+RETURNING id, number, status, payment_status, payment_method, customer_name, phone, comment, delivery_method, delivery_zone_id, address, subtotal, delivery_price, discount, total, promo_code_id, lang, utm_source, utm_medium, utm_campaign, utm_content, fbp, fbc, ttclid, idempotency_key, created_at, updated_at, internal_comment, landmark
 `
 
 type CreateOrderParams struct {
@@ -34,6 +34,7 @@ type CreateOrderParams struct {
 	DeliveryMethod DeliveryMethod
 	DeliveryZoneID *int64
 	Address        *string
+	Landmark       *string
 	Subtotal       int32
 	DeliveryPrice  int32
 	Discount       int32
@@ -59,6 +60,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		arg.DeliveryMethod,
 		arg.DeliveryZoneID,
 		arg.Address,
+		arg.Landmark,
 		arg.Subtotal,
 		arg.DeliveryPrice,
 		arg.Discount,
@@ -104,6 +106,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.InternalComment,
+		&i.Landmark,
 	)
 	return i, err
 }
@@ -198,7 +201,7 @@ func (q *Queries) CreateOrderStatusHistory(ctx context.Context, arg CreateOrderS
 }
 
 const getOrderByIdempotencyKey = `-- name: GetOrderByIdempotencyKey :one
-SELECT id, number, status, payment_status, payment_method, customer_name, phone, comment, delivery_method, delivery_zone_id, address, subtotal, delivery_price, discount, total, promo_code_id, lang, utm_source, utm_medium, utm_campaign, utm_content, fbp, fbc, ttclid, idempotency_key, created_at, updated_at, internal_comment FROM orders
+SELECT id, number, status, payment_status, payment_method, customer_name, phone, comment, delivery_method, delivery_zone_id, address, subtotal, delivery_price, discount, total, promo_code_id, lang, utm_source, utm_medium, utm_campaign, utm_content, fbp, fbc, ttclid, idempotency_key, created_at, updated_at, internal_comment, landmark FROM orders
 WHERE idempotency_key = $1
 `
 
@@ -234,12 +237,13 @@ func (q *Queries) GetOrderByIdempotencyKey(ctx context.Context, idempotencyKey s
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.InternalComment,
+		&i.Landmark,
 	)
 	return i, err
 }
 
 const getOrderByNumber = `-- name: GetOrderByNumber :one
-SELECT id, number, status, payment_status, payment_method, customer_name, phone, comment, delivery_method, delivery_zone_id, address, subtotal, delivery_price, discount, total, promo_code_id, lang, utm_source, utm_medium, utm_campaign, utm_content, fbp, fbc, ttclid, idempotency_key, created_at, updated_at, internal_comment FROM orders
+SELECT id, number, status, payment_status, payment_method, customer_name, phone, comment, delivery_method, delivery_zone_id, address, subtotal, delivery_price, discount, total, promo_code_id, lang, utm_source, utm_medium, utm_campaign, utm_content, fbp, fbc, ttclid, idempotency_key, created_at, updated_at, internal_comment, landmark FROM orders
 WHERE number = $1
 `
 
@@ -275,12 +279,13 @@ func (q *Queries) GetOrderByNumber(ctx context.Context, number string) (Order, e
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.InternalComment,
+		&i.Landmark,
 	)
 	return i, err
 }
 
 const getOrderByNumberAndPhone = `-- name: GetOrderByNumberAndPhone :one
-SELECT id, number, status, payment_status, payment_method, customer_name, phone, comment, delivery_method, delivery_zone_id, address, subtotal, delivery_price, discount, total, promo_code_id, lang, utm_source, utm_medium, utm_campaign, utm_content, fbp, fbc, ttclid, idempotency_key, created_at, updated_at, internal_comment FROM orders
+SELECT id, number, status, payment_status, payment_method, customer_name, phone, comment, delivery_method, delivery_zone_id, address, subtotal, delivery_price, discount, total, promo_code_id, lang, utm_source, utm_medium, utm_campaign, utm_content, fbp, fbc, ttclid, idempotency_key, created_at, updated_at, internal_comment, landmark FROM orders
 WHERE number = $1 AND phone = $2
 `
 
@@ -322,6 +327,7 @@ func (q *Queries) GetOrderByNumberAndPhone(ctx context.Context, arg GetOrderByNu
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.InternalComment,
+		&i.Landmark,
 	)
 	return i, err
 }
@@ -402,7 +408,7 @@ const updateOrderStatus = `-- name: UpdateOrderStatus :one
 UPDATE orders
 SET status = $1
 WHERE id = $2 AND status = $3
-RETURNING id, number, status, payment_status, payment_method, customer_name, phone, comment, delivery_method, delivery_zone_id, address, subtotal, delivery_price, discount, total, promo_code_id, lang, utm_source, utm_medium, utm_campaign, utm_content, fbp, fbc, ttclid, idempotency_key, created_at, updated_at, internal_comment
+RETURNING id, number, status, payment_status, payment_method, customer_name, phone, comment, delivery_method, delivery_zone_id, address, subtotal, delivery_price, discount, total, promo_code_id, lang, utm_source, utm_medium, utm_campaign, utm_content, fbp, fbc, ttclid, idempotency_key, created_at, updated_at, internal_comment, landmark
 `
 
 type UpdateOrderStatusParams struct {
@@ -444,6 +450,7 @@ func (q *Queries) UpdateOrderStatus(ctx context.Context, arg UpdateOrderStatusPa
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.InternalComment,
+		&i.Landmark,
 	)
 	return i, err
 }

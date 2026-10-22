@@ -61,7 +61,7 @@ func (q *Queries) AdminCountOrdersByStatus(ctx context.Context, arg AdminCountOr
 const adminListOrders = `-- name: AdminListOrders :many
 
 SELECT
-    o.id, o.number, o.status, o.payment_status, o.payment_method, o.customer_name, o.phone, o.comment, o.delivery_method, o.delivery_zone_id, o.address, o.subtotal, o.delivery_price, o.discount, o.total, o.promo_code_id, o.lang, o.utm_source, o.utm_medium, o.utm_campaign, o.utm_content, o.fbp, o.fbc, o.ttclid, o.idempotency_key, o.created_at, o.updated_at, o.internal_comment,
+    o.id, o.number, o.status, o.payment_status, o.payment_method, o.customer_name, o.phone, o.comment, o.delivery_method, o.delivery_zone_id, o.address, o.subtotal, o.delivery_price, o.discount, o.total, o.promo_code_id, o.lang, o.utm_source, o.utm_medium, o.utm_campaign, o.utm_content, o.fbp, o.fbc, o.ttclid, o.idempotency_key, o.created_at, o.updated_at, o.internal_comment, o.landmark,
     coalesce((SELECT sum(oi.qty) FROM order_items oi WHERE oi.order_id = o.id), 0)::integer AS items_count
 FROM orders o
 WHERE ($1::order_status IS NULL OR o.status = $1::order_status)
@@ -137,6 +137,7 @@ func (q *Queries) AdminListOrders(ctx context.Context, arg AdminListOrdersParams
 			&i.Order.CreatedAt,
 			&i.Order.UpdatedAt,
 			&i.Order.InternalComment,
+			&i.Order.Landmark,
 			&i.ItemsCount,
 		); err != nil {
 			return nil, err
@@ -161,7 +162,7 @@ func (q *Queries) DecrementPromoCodeUsage(ctx context.Context, id int64) error {
 }
 
 const getOrder = `-- name: GetOrder :one
-SELECT id, number, status, payment_status, payment_method, customer_name, phone, comment, delivery_method, delivery_zone_id, address, subtotal, delivery_price, discount, total, promo_code_id, lang, utm_source, utm_medium, utm_campaign, utm_content, fbp, fbc, ttclid, idempotency_key, created_at, updated_at, internal_comment FROM orders
+SELECT id, number, status, payment_status, payment_method, customer_name, phone, comment, delivery_method, delivery_zone_id, address, subtotal, delivery_price, discount, total, promo_code_id, lang, utm_source, utm_medium, utm_campaign, utm_content, fbp, fbc, ttclid, idempotency_key, created_at, updated_at, internal_comment, landmark FROM orders
 WHERE id = $1
 `
 
@@ -197,6 +198,7 @@ func (q *Queries) GetOrder(ctx context.Context, id int64) (Order, error) {
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.InternalComment,
+		&i.Landmark,
 	)
 	return i, err
 }
@@ -302,7 +304,7 @@ func (q *Queries) ListOrderHistoryWithAdmins(ctx context.Context, orderID int64)
 }
 
 const lockOrder = `-- name: LockOrder :one
-SELECT id, number, status, payment_status, payment_method, customer_name, phone, comment, delivery_method, delivery_zone_id, address, subtotal, delivery_price, discount, total, promo_code_id, lang, utm_source, utm_medium, utm_campaign, utm_content, fbp, fbc, ttclid, idempotency_key, created_at, updated_at, internal_comment FROM orders
+SELECT id, number, status, payment_status, payment_method, customer_name, phone, comment, delivery_method, delivery_zone_id, address, subtotal, delivery_price, discount, total, promo_code_id, lang, utm_source, utm_medium, utm_campaign, utm_content, fbp, fbc, ttclid, idempotency_key, created_at, updated_at, internal_comment, landmark FROM orders
 WHERE id = $1
 FOR UPDATE
 `
@@ -339,6 +341,7 @@ func (q *Queries) LockOrder(ctx context.Context, id int64) (Order, error) {
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.InternalComment,
+		&i.Landmark,
 	)
 	return i, err
 }
@@ -417,7 +420,7 @@ const updateOrderInternalComment = `-- name: UpdateOrderInternalComment :one
 UPDATE orders
 SET internal_comment = $2
 WHERE id = $1
-RETURNING id, number, status, payment_status, payment_method, customer_name, phone, comment, delivery_method, delivery_zone_id, address, subtotal, delivery_price, discount, total, promo_code_id, lang, utm_source, utm_medium, utm_campaign, utm_content, fbp, fbc, ttclid, idempotency_key, created_at, updated_at, internal_comment
+RETURNING id, number, status, payment_status, payment_method, customer_name, phone, comment, delivery_method, delivery_zone_id, address, subtotal, delivery_price, discount, total, promo_code_id, lang, utm_source, utm_medium, utm_campaign, utm_content, fbp, fbc, ttclid, idempotency_key, created_at, updated_at, internal_comment, landmark
 `
 
 type UpdateOrderInternalCommentParams struct {
@@ -457,6 +460,7 @@ func (q *Queries) UpdateOrderInternalComment(ctx context.Context, arg UpdateOrde
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.InternalComment,
+		&i.Landmark,
 	)
 	return i, err
 }
@@ -465,7 +469,7 @@ const updateOrderPaymentStatus = `-- name: UpdateOrderPaymentStatus :one
 UPDATE orders
 SET payment_status = $2
 WHERE id = $1
-RETURNING id, number, status, payment_status, payment_method, customer_name, phone, comment, delivery_method, delivery_zone_id, address, subtotal, delivery_price, discount, total, promo_code_id, lang, utm_source, utm_medium, utm_campaign, utm_content, fbp, fbc, ttclid, idempotency_key, created_at, updated_at, internal_comment
+RETURNING id, number, status, payment_status, payment_method, customer_name, phone, comment, delivery_method, delivery_zone_id, address, subtotal, delivery_price, discount, total, promo_code_id, lang, utm_source, utm_medium, utm_campaign, utm_content, fbp, fbc, ttclid, idempotency_key, created_at, updated_at, internal_comment, landmark
 `
 
 type UpdateOrderPaymentStatusParams struct {
@@ -505,6 +509,7 @@ func (q *Queries) UpdateOrderPaymentStatus(ctx context.Context, arg UpdateOrderP
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.InternalComment,
+		&i.Landmark,
 	)
 	return i, err
 }
