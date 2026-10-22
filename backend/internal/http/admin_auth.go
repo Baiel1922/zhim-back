@@ -19,6 +19,7 @@ var managerOperations = map[string]bool{
 	"AdminGetMe":           true,
 	"AdminListProducts":    true,
 	"AdminGetProduct":      true,
+	"AdminListColors":      true,
 	"AdminSetVariantStock": true,
 	"AdminListOrders":      true,
 	"AdminGetOrder":        true,

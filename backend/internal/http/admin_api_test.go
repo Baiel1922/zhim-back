@@ -92,8 +92,14 @@ func TestAdminAuthAndRoles(t *testing.T) {
 	if resp := a.call("PUT", fmt.Sprintf("/v1/admin/variants/%d/stock", product.Variants[0].ID), map[string]int{"stock": 42}, manager, &variant); resp.StatusCode != 200 || variant.Stock != 42 {
 		t.Fatalf("manager stock = %d %+v", resp.StatusCode, variant)
 	}
+	// Colors are read-only for managers: they label the stock matrix.
+	var colors oapi.AdminColorList
+	if resp := a.call("GET", "/v1/admin/colors", nil, manager, &colors); resp.StatusCode != 200 || len(colors.Items) == 0 {
+		t.Fatalf("manager colors = %d %+v", resp.StatusCode, colors)
+	}
 	for _, c := range []struct{ method, path string }{
 		{"POST", "/v1/admin/categories"},
+		{"POST", "/v1/admin/colors"},
 		{"PUT", fmt.Sprintf("/v1/admin/products/%d", product.ID)},
 		{"GET", "/v1/admin/settings"},
 		{"GET", "/v1/admin/admins"},

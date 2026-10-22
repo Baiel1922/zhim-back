@@ -383,7 +383,7 @@ paths:
     get:
       operationId: adminListColors
       summary: "List colors"
-      description: "Roles: owner."
+      description: "Needed to label the stock matrix. Roles: owner, manager."
       tags: [admin-catalog]
       security:
         - bearerAuth: []
