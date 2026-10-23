@@ -317,6 +317,52 @@ func TestCreateOrderIdempotency(t *testing.T) {
 	wantCode(t, err, service.CodeIdempotencyConflict)
 }
 
+// purchases records what the checkout reports to ad platforms.
+type purchases struct {
+	mu   sync.Mutex
+	list []service.Purchase
+}
+
+func (p *purchases) Purchase(v service.Purchase) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.list = append(p.list, v)
+}
+
+func TestCreateOrderReportsPurchaseOnce(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t)
+	got := &purchases{}
+	e.checkout.SetConversions(got)
+	core, _ := e.variant("ZH-TFC-BLK-M")
+	in := pickupInput("key-conv-00001", service.ItemInput{VariantID: core, Qty: 2})
+	in.Attribution = service.Attribution{Fbp: "fb.1.1.1", Fbc: "fb.1.2.x", Ttclid: "tt"}
+	in.Client = service.ClientInfo{IP: "203.0.113.7", UserAgent: "UA"}
+
+	order, err := e.checkout.CreateOrder(e.ctx, in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// A replay of the same request is the same purchase: nothing new to report.
+	if _, err := e.checkout.CreateOrder(e.ctx, in); err != nil {
+		t.Fatal(err)
+	}
+
+	if len(got.list) != 1 {
+		t.Fatalf("purchases = %d, want 1", len(got.list))
+	}
+	p := got.list[0]
+	if p.EventID != order.Order.Number || p.Value != order.Order.Total || p.Phone != "+996700123456" {
+		t.Errorf("purchase = %+v", p)
+	}
+	if p.Fbp != "fb.1.1.1" || p.Fbc != "fb.1.2.x" || p.Ttclid != "tt" || p.Client.IP != "203.0.113.7" || p.Client.UserAgent != "UA" {
+		t.Errorf("matching data = %+v", p)
+	}
+	if len(p.Items) != 1 || p.Items[0].ID != "ZH-TFC-BLK-M" || p.Items[0].Qty != 2 || p.Items[0].Price != 1990 {
+		t.Errorf("items = %+v", p.Items)
+	}
+}
+
 func TestCreateOrderConcurrentSameKey(t *testing.T) {
 	t.Parallel()
 	e := newEnv(t)

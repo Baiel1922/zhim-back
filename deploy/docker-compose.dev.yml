@@ -110,6 +110,10 @@ services:
       NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL}
       NEXT_PUBLIC_SITE_URL: ${WEB_URL}
       REVALIDATE_SECRET: ${REVALIDATE_SECRET}
+      # Browser pixels and GA4; empty = not loaded.
+      META_PIXEL_ID: ${META_PIXEL_ID:-}
+      TIKTOK_PIXEL_ID: ${TIKTOK_PIXEL_ID:-}
+      GA4_MEASUREMENT_ID: ${GA4_MEASUREMENT_ID:-}
     ports:
       - "${WEB_PORT:-3000}:3000"
     volumes:

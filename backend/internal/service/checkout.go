@@ -32,12 +32,14 @@ type Checkout struct {
 	store  *repo.Store
 	notify Revalidator
 	events OrderEvents
-	now    func() time.Time
+	// Ad platforms; only orders placed by this call are reported, not replays.
+	conversions Conversions
+	now         func() time.Time
 }
 
 // NewCheckout creates a Checkout. notify (may be nil) learns about stock changes.
 func NewCheckout(store *repo.Store, notify Revalidator) *Checkout {
-	return &Checkout{store: store, notify: notifierOrNoop(notify), events: noopOrderEvents{}, now: time.Now}
+	return &Checkout{store: store, notify: notifierOrNoop(notify), events: noopOrderEvents{}, conversions: noopConversions{}, now: time.Now}
 }
 
 // PromoResult is a promo code that applies to a subtotal.
@@ -94,6 +96,8 @@ type OrderInput struct {
 	Attribution    Attribution
 	// Honeypot must be empty; bots fill every field.
 	Honeypot string
+	// Client is reported to ad platforms with the purchase.
+	Client ClientInfo
 }
 
 // ItemInput is one cart line.
@@ -152,6 +156,7 @@ func (c *Checkout) CreateOrder(ctx context.Context, in OrderInput) (*OrderDetail
 	// Stock changed: refresh availability on the storefront.
 	c.notify.Notify(productTags(d.ProductSlugs)...)
 	c.events.OrderCreated(order.ID)
+	c.conversions.Purchase(purchaseOf(d, in.Client))
 	return d, nil
 }
 

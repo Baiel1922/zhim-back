@@ -16,6 +16,7 @@ import (
 	"github.com/Baiel1922/zhim-back/backend/internal/auth"
 	"github.com/Baiel1922/zhim-back/backend/internal/bot"
 	"github.com/Baiel1922/zhim-back/backend/internal/config"
+	"github.com/Baiel1922/zhim-back/backend/internal/conversions"
 	apihttp "github.com/Baiel1922/zhim-back/backend/internal/http"
 	"github.com/Baiel1922/zhim-back/backend/internal/imgproxy"
 	"github.com/Baiel1922/zhim-back/backend/internal/repo"
@@ -74,6 +75,19 @@ func run() error {
 	go notifier.Run(ctx)
 
 	checkout := service.NewCheckout(store, notifier)
+	if sender := conversions.New(conversions.Config{
+		MetaPixelID:         cfg.Meta.PixelID,
+		MetaAccessToken:     cfg.Meta.CAPIAccessToken,
+		MetaTestEventCode:   cfg.Meta.TestEventCode,
+		TikTokPixelID:       cfg.TikTok.PixelID,
+		TikTokAccessToken:   cfg.TikTok.EventsAccessToken,
+		TikTokTestEventCode: cfg.TikTok.TestEventCode,
+		WebURL:              cfg.WebURL,
+	}, log); sender != nil {
+		checkout.SetConversions(sender)
+		go sender.Run(ctx)
+		log.Info("server-side conversions enabled", slog.Any("platforms", sender.Platforms()))
+	}
 	admin := service.NewAdmin(store, objects, notifier, loc, log)
 	if cfg.Telegram.BotEnabled {
 		reportAt, err := time.Parse("15:04", cfg.Telegram.DailyReportTime)
@@ -105,6 +119,7 @@ func run() error {
 		Admin:             admin,
 		AdminAuth:         service.NewAdminAuth(store, tokens, cfg.Telegram.BotToken),
 		Images:            images,
+		WebURL:            cfg.WebURL,
 		CORSOrigins:       cfg.CORSAllowedOrigins,
 		TrustedProxyCIDRs: cfg.HTTP.TrustedProxyCIDRs,
 		CheckoutRateLimit: cfg.RateLimit.CheckoutPerMinute,

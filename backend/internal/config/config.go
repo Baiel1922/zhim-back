@@ -22,6 +22,8 @@ type Config struct {
 	RateLimit          RateLimit `envPrefix:"RATE_LIMIT_"`
 	JWT                JWT       `envPrefix:"JWT_"`
 	Telegram           Telegram  `envPrefix:"TELEGRAM_"`
+	Meta               Meta      `envPrefix:"META_"`
+	TikTok             TikTok    `envPrefix:"TIKTOK_"`
 	// Public URLs: the admin Mini App (bot buttons need HTTPS) and the storefront.
 	AdminURL string `env:"ADMIN_URL"`
 	WebURL   string `env:"WEB_URL"`
@@ -39,6 +41,23 @@ type Telegram struct {
 	BotEnabled bool `env:"BOT_ENABLED" envDefault:"true"`
 	// Daily summary time (HH:MM, business timezone).
 	DailyReportTime string `env:"DAILY_REPORT_TIME" envDefault:"21:00"`
+}
+
+// Meta holds Meta Pixel and Conversions API settings. The pixel ID alone
+// enables the browser pixel (storefront); with the token the API also reports
+// purchases from the server.
+type Meta struct {
+	PixelID         string `env:"PIXEL_ID"`
+	CAPIAccessToken string `env:"CAPI_ACCESS_TOKEN"`
+	// Routes events to Events Manager → Test Events; empty in production.
+	TestEventCode string `env:"TEST_EVENT_CODE"`
+}
+
+// TikTok holds TikTok Pixel and Events API settings (same scheme as Meta).
+type TikTok struct {
+	PixelID           string `env:"PIXEL_ID"`
+	EventsAccessToken string `env:"EVENTS_ACCESS_TOKEN"`
+	TestEventCode     string `env:"TEST_EVENT_CODE"`
 }
 
 // JWT holds admin token settings.

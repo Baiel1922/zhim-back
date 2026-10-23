@@ -25,6 +25,8 @@ type Deps struct {
 	Admin     *service.Admin
 	AdminAuth *service.AdminAuth
 	Images    *imgproxy.Signer
+	// Public storefront URL, for links in the product feed.
+	WebURL string
 	// Browser origins allowed by CORS.
 	CORSOrigins []string
 	// Reverse proxy CIDRs whose X-Forwarded-For is trusted; empty = use the TCP peer.
@@ -43,6 +45,7 @@ func NewRouter(d Deps) http.Handler {
 	} else {
 		r.Use(middleware.ClientIPFromRemoteAddr)
 	}
+	r.Use(withUserAgent)
 	r.Use(requestLogger(d.Log))
 	r.Use(middleware.Recoverer)
 	r.Use(cors(d.CORSOrigins))

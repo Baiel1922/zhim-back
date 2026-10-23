@@ -30,6 +30,8 @@ tags:
     description: Delivery zones, promo codes and settings
   - name: admin-orders
     description: Order processing and dashboard
+  - name: feeds
+    description: Product feeds for ad platforms
 
 paths:
   /healthz:
@@ -44,6 +46,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Health"
+
+  /feeds/meta.xml:
+    get:
+      operationId: getMetaFeed
+      summary: Product catalog feed for Meta Commerce Manager
+      description: >
+        RSS 2.0 with the Google Merchant (g:) namespace, Russian texts. Every
+        active variant is an item: g:id is the SKU, g:item_group_id the product
+        slug (the same IDs the pixels send as content_ids). Images are imgproxy
+        URLs, availability follows stock. Cached for a few minutes.
+      tags: [feeds]
+      responses:
+        "200":
+          description: Feed
+          content:
+            application/xml:
+              schema:
+                type: string
 
   /v1/categories:
     get:

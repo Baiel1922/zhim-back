@@ -118,3 +118,19 @@ func rateLimit(limiters map[string]*rateLimiter) oapi.StrictMiddlewareFunc {
 		}
 	}
 }
+
+type userAgentKey struct{}
+
+// withUserAgent keeps the User-Agent in the context: strict handlers do not
+// see the request, and the purchase event for ad platforms needs it.
+func withUserAgent(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), userAgentKey{}, r.UserAgent())
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func userAgent(ctx context.Context) string {
+	ua, _ := ctx.Value(userAgentKey{}).(string)
+	return ua
+}

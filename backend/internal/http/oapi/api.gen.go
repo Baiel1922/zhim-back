@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"time"
@@ -1402,6 +1403,9 @@ type RevalidateStorefrontJSONRequestBody = RevalidateRequest
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// GetMetaFeed Product catalog feed for Meta Commerce Manager
+	// (GET /feeds/meta.xml)
+	GetMetaFeed(w http.ResponseWriter, r *http.Request)
 	// GetHealthz Liveness probe
 	// (GET /healthz)
 	GetHealthz(w http.ResponseWriter, r *http.Request)
@@ -1572,6 +1576,12 @@ type ServerInterface interface {
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// GetMetaFeed Product catalog feed for Meta Commerce Manager
+// (GET /feeds/meta.xml)
+func (_ Unimplemented) GetMetaFeed(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // GetHealthz Liveness probe
 // (GET /healthz)
@@ -1911,6 +1921,20 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// GetMetaFeed operation middleware
+func (siw *ServerInterfaceWrapper) GetMetaFeed(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMetaFeed(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // GetHealthz operation middleware
 func (siw *ServerInterfaceWrapper) GetHealthz(w http.ResponseWriter, r *http.Request) {
@@ -3435,6 +3459,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/healthz", wrapper.GetHealthz)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/feeds/meta.xml", wrapper.GetMetaFeed)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/v1/categories", wrapper.ListCategories)
 	})
 	r.Group(func(r chi.Router) {
@@ -3659,6 +3686,33 @@ type UnauthorizedJSONResponse Error
 type UnprocessableJSONResponse Error
 
 type UnsupportedMediaTypeJSONResponse Error
+
+type GetMetaFeedRequestObject struct {
+}
+
+type GetMetaFeedResponseObject interface {
+	VisitGetMetaFeedResponse(w http.ResponseWriter) error
+}
+
+type GetMetaFeed200ApplicationXMLResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response GetMetaFeed200ApplicationXMLResponse) VisitGetMetaFeedResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/xml")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
 
 type GetHealthzRequestObject struct {
 }
@@ -7456,6 +7510,9 @@ func (response GetPublicSettings400JSONResponse) VisitGetPublicSettingsResponse(
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// GetMetaFeed Product catalog feed for Meta Commerce Manager
+	// (GET /feeds/meta.xml)
+	GetMetaFeed(ctx context.Context, request GetMetaFeedRequestObject) (GetMetaFeedResponseObject, error)
 	// GetHealthz Liveness probe
 	// (GET /healthz)
 	GetHealthz(ctx context.Context, request GetHealthzRequestObject) (GetHealthzResponseObject, error)
@@ -7660,6 +7717,30 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// GetMetaFeed operation middleware
+func (sh *strictHandler) GetMetaFeed(w http.ResponseWriter, r *http.Request) {
+	var request GetMetaFeedRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMetaFeed(ctx, request.(GetMetaFeedRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMetaFeed")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMetaFeedResponseObject); ok {
+		if err := validResponse.VisitGetMetaFeedResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // GetHealthz operation middleware

@@ -3,6 +3,8 @@ package http
 import (
 	"context"
 
+	"github.com/go-chi/chi/v5/middleware"
+
 	"github.com/Baiel1922/zhim-back/backend/internal/http/oapi"
 	"github.com/Baiel1922/zhim-back/backend/internal/imgproxy"
 	"github.com/Baiel1922/zhim-back/backend/internal/repo/db"
@@ -16,6 +18,9 @@ type Handlers struct {
 	admin     *service.Admin
 	adminAuth *service.AdminAuth
 	images    *imgproxy.Signer
+	// Storefront base URL for links in the product feed.
+	webURL string
+	feed   *feedCache
 }
 
 var _ oapi.StrictServerInterface = (*Handlers)(nil)
@@ -25,7 +30,10 @@ var thumbPreset = imgproxy.Thumb
 
 // NewHandlers constructs the API handlers.
 func NewHandlers(d Deps) *Handlers {
-	return &Handlers{catalog: d.Catalog, checkout: d.Checkout, admin: d.Admin, adminAuth: d.AdminAuth, images: d.Images}
+	return &Handlers{
+		catalog: d.Catalog, checkout: d.Checkout, admin: d.Admin, adminAuth: d.AdminAuth, images: d.Images,
+		webURL: d.WebURL, feed: &feedCache{},
+	}
 }
 
 // presenter validates the ?lang parameter (absent = ru).
@@ -151,6 +159,7 @@ func (h *Handlers) CreateOrder(ctx context.Context, req oapi.CreateOrderRequestO
 		PromoCode:      deref(b.PromoCode),
 		Honeypot:       deref(b.Website),
 		Items:          make([]service.ItemInput, 0, len(b.Items)),
+		Client:         service.ClientInfo{IP: middleware.GetClientIP(ctx), UserAgent: userAgent(ctx)},
 	}
 	for _, it := range b.Items {
 		in.Items = append(in.Items, service.ItemInput{VariantID: it.VariantID, Qty: it.Qty})
